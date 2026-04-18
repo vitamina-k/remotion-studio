@@ -452,10 +452,12 @@ export const FootageWithOverlay: React.FC<FootageWithOverlayProps> = ({
   return (
     <AbsoluteFill style={{ backgroundColor: effectiveBg, overflow: 'hidden' }}>
 
-      {/* ── Footage + Ken Burns ── */}
-      <div style={{ position: 'absolute', inset: 0, transform: `scale(${kenBurnsScale})`, transformOrigin: '50% 50%' }}>
-        <Video src={videoSrc} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'contrast(1.08) saturate(1.18) brightness(0.94)' }} />
-      </div>
+      {/* ── Footage + Ken Burns (solo si hay videoSrc) ── */}
+      {videoSrc && (
+        <div style={{ position: 'absolute', inset: 0, transform: `scale(${kenBurnsScale})`, transformOrigin: '50% 50%' }}>
+          <Video src={videoSrc} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'contrast(1.08) saturate(1.18) brightness(0.94)' }} />
+        </div>
+      )}
 
       {/* ── Gradiente top ── */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 280, background: 'linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, transparent 100%)', pointerEvents: 'none' }} />

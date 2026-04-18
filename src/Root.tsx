@@ -292,7 +292,7 @@ export const RemotionRoot: React.FC = () => {
         height={BRAND.heightVertical}
         schema={footageWithOverlaySchema}
         defaultProps={{
-          videoSrc: 'http://localhost:3001/recordings/video%201.mp4',
+          videoSrc: '',
           durationFrames: 1162,
           showCaptions: true,
           captionPosition: 'center' as const,
