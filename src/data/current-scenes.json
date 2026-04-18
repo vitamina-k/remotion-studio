@@ -1,0 +1,39 @@
+{
+  "title": "609 asesores en Moncloa — Sánchez bate su récord",
+  "scenes": [
+    {
+      "type": "hook",
+      "durationFrames": 210,
+      "content": { "text": "609 asesores en Moncloa", "subtext": "Sánchez bate su propio récord — y nadie sabe cuánto cobra cada uno" }
+    },
+    {
+      "type": "stat",
+      "durationFrames": 120,
+      "content": { "value": "609", "label": "asesores y personal de confianza en la Presidencia", "sublabel": "Nuevo récord histórico · Abril 2026" }
+    },
+    {
+      "type": "stat",
+      "durationFrames": 120,
+      "content": { "value": "1264", "label": "cargos de confianza en todo el gobierno", "sublabel": "453 en nivel 30 — el más alto" }
+    },
+    {
+      "type": "comparison",
+      "durationFrames": 150,
+      "content": {
+        "title": "Gasto en personal eventual",
+        "left":  { "label": "2018", "value": "40,4M €", "sublabel": "Presupuesto inicial" },
+        "right": { "label": "2025", "value": "71,2M €", "sublabel": "+76,5% de incremento" }
+      }
+    },
+    {
+      "type": "keyword",
+      "durationFrames": 180,
+      "content": { "text": "Sin nombres, sin funciones, sin salarios. Cero transparencia sobre quién cobra y por qué", "highlight": "Cero transparencia" }
+    },
+    {
+      "type": "quote",
+      "durationFrames": 210,
+      "content": { "text": "\"El gasto real en eventuales ha subido casi un 90% desde 2018.\"", "subtext": "The Objective · 18 de abril de 2026" }
+    }
+  ]
+}

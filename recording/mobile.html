@@ -39,6 +39,22 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:flex-
 .cam-badge{padding:5px 12px;border-radius:20px;font-size:.65rem;font-weight:700;backdrop-filter:blur(8px);background:rgba(0,0,0,.5);color:#fff;letter-spacing:.5px}
 .cam-flip{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
 
+/* ── TELEPROMPTER OVERLAY ── */
+.tp-overlay{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.7) 70%,transparent 100%);
+  padding:40px 20px 20px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:opacity .3s;
+}
+.tp-scene-type{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:rgba(255,255,255,.5)}
+.tp-scene-text{font-size:1.15rem;font-weight:800;color:#fff;text-align:center;line-height:1.35;letter-spacing:-.01em;max-height:80px;overflow:hidden}
+.tp-scene-nav{display:flex;align-items:center;gap:12px;margin-top:4px}
+.tp-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}
+.tp-dot.active{background:#fff;width:18px;border-radius:3px}
+.tp-tap-hint{font-size:.6rem;color:rgba(255,255,255,.35);margin-top:2px;letter-spacing:.5px}
+
 /* Cards */
 .card{width:100%;background:var(--surface);border-radius:14px;border:1px solid var(--border);overflow:hidden}
 .card-head{padding:13px 16px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);border-bottom:1px solid var(--border)}
@@ -91,6 +107,13 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:flex-
   <!-- Preview -->
   <div class="cam-wrap" id="camWrap" style="display:none">
     <video class="cam-video" id="camVideo" autoplay muted playsinline></video>
+    <!-- Teleprompter overlay — toca para avanzar escena -->
+    <div class="tp-overlay" id="tpOverlay" onclick="tpNext()" style="display:none">
+      <div class="tp-scene-type" id="tpType">▶ ESCENA 1</div>
+      <div class="tp-scene-text" id="tpText">Cargando guión…</div>
+      <div class="tp-scene-nav" id="tpNav"></div>
+      <div class="tp-tap-hint">Toca para avanzar →</div>
+    </div>
     <div class="cam-overlay">
       <span class="cam-badge" id="camBadge">📷 Trasera</span>
       <button class="cam-flip" onclick="flipCamera()" title="Cambiar cámara">🔄</button>
@@ -318,6 +341,56 @@ socket.on('rec-state', ({ state }) => {
   const labels = { recording: '🔴 Grabando', paused: '⏸ Pausado', stopped: '⏹ Detenido', idle: 'Listo' };
   document.getElementById('remoteStatus').textContent = labels[state] || state;
 });
+
+// ── TELEPROMPTER ──────────────────────────────────────────────
+const SCENE_ICONS = { title:'🎯',stat:'📊',quote:'💬',keyword:'🔑',comparison:'⚖️',hook:'🎣',chart:'📈' };
+let tpScenes = [], tpCurrent = 0;
+
+async function loadTpScenes() {
+  try {
+    const res  = await fetch('/api/current-scenes');
+    const data = await res.json();
+    tpScenes   = data.scenes || [];
+    if (tpScenes.length) {
+      document.getElementById('tpOverlay').style.display = 'flex';
+      renderTp();
+    }
+  } catch {}
+}
+
+function renderTp() {
+  const sc = tpScenes[tpCurrent];
+  if (!sc) return;
+  const icon = SCENE_ICONS[sc.type] || '▶';
+  const text = sc.content?.text || sc.content?.label || sc.content?.value || sc.type;
+  document.getElementById('tpType').textContent = `${icon} ESCENA ${tpCurrent + 1}/${tpScenes.length}`;
+  document.getElementById('tpText').textContent = String(text).slice(0, 120);
+  // Dots
+  const nav = document.getElementById('tpNav');
+  nav.innerHTML = tpScenes.map((_, i) =>
+    `<div class="tp-dot${i === tpCurrent ? ' active' : ''}"></div>`
+  ).join('');
+}
+
+function tpNext() {
+  if (tpCurrent < tpScenes.length - 1) {
+    tpCurrent++;
+    renderTp();
+    socket.emit('remote-cmd', { action: 'scene', index: tpCurrent });
+  }
+}
+
+// Recibir avance de escena desde el studio (teclado → o grabación)
+socket.on('remote-cmd', ({ action, index }) => {
+  if (action === 'scene' && typeof index === 'number') {
+    tpCurrent = index;
+    renderTp();
+  }
+});
+
+// Cargar escenas cuando la cámara esté lista
+document.getElementById('camWrap').addEventListener('transitionend', loadTpScenes, { once: true });
+setTimeout(loadTpScenes, 2000); // fallback
 
 // Keep screen awake
 if ('wakeLock' in navigator) {

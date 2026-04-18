@@ -141,6 +141,21 @@ body{
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
+/* ── GUIÓN / TELEPROMPTER SIDEBAR ── */
+.scene-list{display:flex;flex-direction:column;gap:0;padding:8px 0}
+.scene-card{margin:4px 10px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--surface2);padding:10px 12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.scene-card:hover{border-color:var(--border2)}
+.scene-card.current{border-color:var(--accent);background:var(--accent-dim);box-shadow:0 0 0 3px rgba(78,128,238,.1)}
+.scene-card.past{opacity:.45}
+.scene-card-type{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--text4);margin-bottom:4px}
+.scene-card.current .scene-card-type{color:var(--accent)}
+.scene-card-text{font-size:.73rem;font-weight:600;color:var(--text);line-height:1.4}
+.scene-card-dur{font-size:.6rem;font-family:'Space Mono',monospace;color:var(--text4);margin-top:4px}
+.scene-progress{position:absolute;bottom:0;left:0;height:2px;background:var(--accent);transition:width .5s linear;width:0}
+.scene-no-data{padding:20px;text-align:center;font-size:.72rem;color:var(--text4);line-height:1.6}
+.tp-shortcut{font-size:.6rem;color:var(--text4);text-align:center;padding:4px 10px 8px}
+.tp-shortcut kbd{background:var(--surface3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;font-family:'Space Mono',monospace;font-size:.58rem}
+
 /* ── TELEPROMPTER ── */
 .teleprompter-wrap{
   display:none;gap:14px;flex:1;
@@ -377,7 +392,14 @@ body{
   <!-- ══ SIDEBAR DERECHA — QR + grabaciones ══ -->
   <div class="sidebar sidebar-r">
 
-    <div class="s-head">Conectar móvil</div>
+    <!-- ══ GUIÓN DE ESCENAS ══ -->
+    <div class="s-head">Guión de escenas</div>
+    <div class="scene-list" id="sceneList">
+      <div class="scene-no-data">Cargando escenas…<br>Genera un vídeo primero.</div>
+    </div>
+    <div class="tp-shortcut">Avanzar escena: <kbd>→</kbd> &nbsp; Retroceder: <kbd>←</kbd></div>
+
+    <div class="s-head" style="margin-top:4px">Conectar móvil</div>
     <div class="qr-panel" id="qrPanel">
       <img id="qrImg" class="qr-img" src="" alt="QR" style="display:none">
       <div id="qrConnected" style="display:none">
@@ -1018,6 +1040,110 @@ socket.on('process-event', ({ stage, message, output }) => {
   }
 });
 
+// ── GUIÓN DE ESCENAS ──────────────────────────────────────────
+const tp = {
+  scenes: [],
+  current: 0,
+  elapsed: 0,
+  ticker: null,
+};
+
+const SCENE_ICONS = {
+  title: '🎯', stat: '📊', quote: '💬', keyword: '🔑',
+  comparison: '⚖️', hook: '🎣', chart: '📈',
+};
+
+async function loadScenes() {
+  try {
+    const res  = await fetch('/api/current-scenes');
+    const data = await res.json();
+    tp.scenes  = data.scenes || [];
+    renderSceneList();
+  } catch { /* server not running — ignore */ }
+}
+
+function renderSceneList() {
+  const list = document.getElementById('sceneList');
+  if (!tp.scenes.length) {
+    list.innerHTML = '<div class="scene-no-data">Sin escenas.<br>Genera un vídeo primero.</div>';
+    return;
+  }
+  list.innerHTML = tp.scenes.map((sc, i) => {
+    const fps  = 30;
+    const secs = Math.round((sc.durationFrames || 90) / fps);
+    const icon = SCENE_ICONS[sc.type] || '▶';
+    const text = sc.content?.text || sc.content?.label || sc.content?.value || sc.type;
+    const cls  = i === tp.current ? 'scene-card current' : i < tp.current ? 'scene-card past' : 'scene-card';
+    return `<div class="${cls}" id="sc-${i}" onclick="jumpScene(${i})">
+      <div class="scene-card-type">${icon} ${sc.type}</div>
+      <div class="scene-card-text">${String(text).slice(0, 80)}</div>
+      <div class="scene-card-dur">~${secs}s</div>
+      <div class="scene-progress" id="sp-${i}"></div>
+    </div>`;
+  }).join('');
+}
+
+function jumpScene(i) {
+  tp.current = Math.max(0, Math.min(tp.scenes.length - 1, i));
+  tp.elapsed = 0;
+  renderSceneList();
+  scrollToCurrent();
+  // Emite al móvil
+  if (socket) socket.emit('remote-cmd', { action: 'scene', index: tp.current });
+}
+
+function scrollToCurrent() {
+  const el = document.getElementById(`sc-${tp.current}`);
+  if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function startSceneTicker() {
+  if (tp.ticker) clearInterval(tp.ticker);
+  tp.elapsed = 0;
+  tp.current = 0;
+  tp.ticker  = setInterval(() => {
+    if (state.paused) return;
+    tp.elapsed += 0.5;
+    const sc = tp.scenes[tp.current];
+    if (!sc) return;
+    const dur = (sc.durationFrames || 90) / 30;
+    const pct = Math.min(100, (tp.elapsed / dur) * 100);
+    const bar = document.getElementById(`sp-${tp.current}`);
+    if (bar) bar.style.width = pct + '%';
+    if (tp.elapsed >= dur && tp.current < tp.scenes.length - 1) {
+      tp.elapsed = 0;
+      tp.current++;
+      renderSceneList();
+      scrollToCurrent();
+      if (socket) socket.emit('remote-cmd', { action: 'scene', index: tp.current });
+    }
+  }, 500);
+}
+
+function stopSceneTicker() {
+  if (tp.ticker) { clearInterval(tp.ticker); tp.ticker = null; }
+  tp.current = 0; tp.elapsed = 0;
+  renderSceneList();
+}
+
+// Teclado: ← → para navegar escenas
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') jumpScene(tp.current + 1);
+  if (e.key === 'ArrowLeft')  jumpScene(tp.current - 1);
+});
+
+// Patch startRecording / stopRecording para arrancar/parar el ticker
+const _origStart = startRecording;
+startRecording = async function() {
+  await _origStart.call(this, ...arguments);
+  if (tp.scenes.length) startSceneTicker();
+};
+const _origStop = stopRecording;
+stopRecording = function() {
+  _origStop.call(this, ...arguments);
+  stopSceneTicker();
+};
+
 // ── INIT ──────────────────────────────────────────────────────
 async function init() {
   // 1. Pedir permisos primero para que el navegador los recuerde
@@ -1036,6 +1162,7 @@ async function init() {
 
   // updatePreview ya se llama dentro de startPC
   await loadQR();
+  await loadScenes();
 }
 
 window.onload = init;

@@ -177,6 +177,19 @@ app.post('/api/process', express.json(), async (req, res) => {
   });
 });
 
+// ── GET /api/current-scenes ──────────────────────────────────
+const SCENES_FILE = path.join(__dirname, 'src', 'data', 'current-scenes.json');
+
+app.get('/api/current-scenes', (_req, res) => {
+  try {
+    if (!fs.existsSync(SCENES_FILE)) return res.json({ scenes: [], title: '' });
+    const data = JSON.parse(fs.readFileSync(SCENES_FILE, 'utf8'));
+    res.json(data);
+  } catch (e) {
+    res.json({ scenes: [], title: '' });
+  }
+});
+
 app.get('/api/qr', async (req, res) => {
   const url = `https://${ip}:${HTTPS_PORT}/mobile.html`;
   const qr  = await QRCode.toDataURL(url, {

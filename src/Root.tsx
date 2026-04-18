@@ -10,6 +10,64 @@ import { TextReveal, textRevealSchema } from "./compositions/TextReveal";
 import { SplitScreen, splitScreenSchema } from "./compositions/SplitScreen";
 import { BRAND } from "./brand/brand";
 
+// ─── Sánchez 609 asesores — TheObjective 18 abril 2026 ───────────────────────
+
+const sanchez609Scenes: React.ComponentProps<typeof DataStory>['scenes'] = [
+  {
+    type: 'hook',
+    durationFrames: 210,
+    bg: 'alert' as const,
+    content: {
+      text: '609 asesores\nen Moncloa',
+      subtext: 'Sánchez bate su propio récord — y nadie sabe cuánto cobra cada uno',
+    },
+  },
+  {
+    type: 'stat',
+    durationFrames: 120,
+    content: {
+      value: '609',
+      label: 'asesores y personal de confianza en la Presidencia',
+        trend: 'up',
+    },
+  },
+  {
+    type: 'stat',
+    durationFrames: 120,
+    content: {
+      value: '1264',
+      label: 'cargos de confianza en todo el gobierno',
+      trend: 'up',
+    },
+  },
+  {
+    type: 'comparison',
+    durationFrames: 150,
+    content: {
+      title: 'Gasto en personal eventual',
+      left:  { label: '2018', value: '40,4M €', sublabel: 'Presupuesto inicial', color: '#22C55E' },
+      right: { label: '2025', value: '71,2M €', sublabel: '+76,5% de incremento',  color: '#E63946' },
+    },
+  },
+  {
+    type: 'keyword',
+    durationFrames: 180,
+    bg: 'grid' as const,
+    content: {
+      text: 'Sin nombres, sin funciones, sin salarios. Cero transparencia sobre quién cobra y por qué',
+      highlight: 'Cero transparencia',
+    },
+  },
+  {
+    type: 'quote',
+    durationFrames: 210,
+    content: {
+      text: '"El gasto real en eventuales\nha subido casi un 90%\ndesde 2018."',
+      subtext: 'The Objective · 18 de abril de 2026',
+    },
+  },
+];
+
 // ─── Escenas de ejemplo — todas las escenas nuevas ────────────────────────────
 
 const dataStoryExampleScenes: React.ComponentProps<typeof DataStory>['scenes'] = [
@@ -148,6 +206,8 @@ const alviseSALFScenes: React.ComponentProps<typeof DataStory>['scenes'] = [
   },
 ];
 
+void alviseSALFScenes; // archivo histórico
+
 // ─── Composiciones ────────────────────────────────────────────────────────────
 
 export const RemotionRoot: React.FC = () => {
@@ -211,15 +271,15 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="DataStory"
         component={DataStory}
-        durationInFrames={totalFrames(alviseSALFScenes)}
+        durationInFrames={totalFrames(sanchez609Scenes)}
         fps={BRAND.fps}
         width={BRAND.width}
         height={BRAND.height}
         schema={dataStorySchema}
         defaultProps={{
-          scenes: alviseSALFScenes,
+          scenes: sanchez609Scenes,
           background: "#080808",
-          accentColor: "#22C55E",
+          accentColor: "#E63946",
         }}
       />
 
@@ -239,16 +299,24 @@ export const RemotionRoot: React.FC = () => {
           background: BRAND.colors.black,
           captions: video1Captions,
           handle: '@vitamina_k',
-          introTitle: '¿Es culpable Alvise?',
+          introTitle: '609 asesores en Moncloa',
           introDurationFrames: 45,
           ctaText: 'Sígueme para más →',
           ctaDurationFrames: 50,
           lowerThird: {
             name: 'Kevin Pérez',
-            title: 'VOX · Análisis interno',
+            title: 'Análisis político',
             showAtFrame: 50,
-            hideAtFrame: 1100,
+            hideAtFrame: 1080,
           },
+          overlays: [
+            { type: 'breaking',  startFrame: 46,  endFrame: 160,  text: 'Sánchez bate su récord de asesores' },
+            { type: 'stat',      startFrame: 200, endFrame: 370,  value: '609', text: ' asesores' },
+            { type: 'alert',     startFrame: 400, endFrame: 540,  text: 'RÉCORD HISTÓRICO' },
+            { type: 'chart-up',  startFrame: 580, endFrame: 760,  text: 'Gasto +76,5%' },
+            { type: 'warning',   startFrame: 800, endFrame: 950,  text: 'SIN TRANSPARENCIA' },
+            { type: 'countdown', startFrame: 1060, endFrame: 1162 },
+          ],
         }}
       />
 
