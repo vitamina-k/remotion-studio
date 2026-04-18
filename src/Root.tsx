@@ -1,3 +1,4 @@
+import React from "react";
 import { Composition } from "remotion";
 import { HelloWorld, myCompSchema } from "./HelloWorld";
 import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
@@ -8,6 +9,7 @@ import { PoliticalReel, politicalReelSchema, reelTotalFrames } from "./compositi
 import { SplitReel, splitReelSchema, splitReelTotalFrames } from "./compositions/SplitReel";
 import { TextReveal, textRevealSchema } from "./compositions/TextReveal";
 import { SplitScreen, splitScreenSchema } from "./compositions/SplitScreen";
+import { HybridReel, hybridReelSchema } from "./compositions/HybridReel";
 import { BRAND } from "./brand/brand";
 
 // ─── Sánchez 609 asesores — TheObjective 18 abril 2026 ───────────────────────
@@ -471,6 +473,78 @@ export const RemotionRoot: React.FC = () => {
           },
           theme: 'dark' as const,
           durationFrames: 150,
+        }}
+      />
+
+      {/* ─── HybridReel: footage + DataStory panels — formato vertical 1080×1920 ─── */}
+      <Composition
+        id="HybridReel"
+        component={HybridReel}
+        durationInFrames={500}
+        fps={BRAND.fps}
+        width={BRAND.widthVertical}
+        height={BRAND.heightVertical}
+        schema={hybridReelSchema}
+        defaultProps={{
+          videoSrc: 'http://localhost:3001/recordings/rec_2026-04-18-18-18-47.webm',
+          durationFrames: 500,
+          captions: [
+            {"word":"Hola,","start":0.78,"end":1.46},{"word":"probando","start":1.62,"end":2.02},
+            {"word":"uno,","start":2.02,"end":2.72},{"word":"dos,","start":2.84,"end":3.06},
+            {"word":"tres,","start":3.32,"end":3.56},{"word":"cuatro,","start":3.68,"end":4.12},
+            {"word":"probando,","start":4.34,"end":4.68},{"word":"probando,","start":4.76,"end":5.92},
+            {"word":"haciendo","start":5.92,"end":6.26},{"word":"una","start":6.26,"end":6.5},
+            {"word":"prueba","start":6.5,"end":6.7},{"word":"de","start":6.7,"end":6.9},
+            {"word":"audio","start":6.9,"end":7.26},{"word":"para","start":7.26,"end":7.64},
+            {"word":"una","start":7.64,"end":8.1},{"word":"grabación","start":8.1,"end":8.66},
+            {"word":"de","start":8.66,"end":8.84},{"word":"asesores","start":8.84,"end":9.2},
+            {"word":"y","start":9.2,"end":9.36},{"word":"personal","start":9.36,"end":9.68},
+            {"word":"de","start":9.68,"end":9.84},{"word":"confianza","start":9.84,"end":10.32},
+            {"word":"en","start":10.32,"end":10.4},{"word":"la","start":10.4,"end":10.46},
+            {"word":"presidencia,","start":10.46,"end":11.06},{"word":"cargos","start":11.46,"end":11.8},
+            {"word":"de","start":11.8,"end":11.9},{"word":"confianza","start":11.9,"end":12.62},
+            {"word":"en","start":12.62,"end":12.9},{"word":"todo","start":12.9,"end":13.22},
+            {"word":"el","start":13.22,"end":13.6},{"word":"gobierno","start":13.6,"end":14.2},
+            {"word":"y","start":14.2,"end":15.02},{"word":"detenemos","start":15.02,"end":15.74},
+            {"word":"y","start":15.74,"end":15.86},{"word":"procesamos.","start":15.86,"end":16.4},
+          ],
+          showCaptions: true,
+          handle: '@vitamina_k',
+          ctaText: 'Sígueme para más →',
+          ctaDurationFrames: 50,
+          accentColor: '#E63946',
+          segments: [
+            {
+              mode: 'split-right' as const,
+              startFrame: 80,
+              endFrame: 220,
+              panel: {
+                type: 'stat' as const,
+                value: '609',
+                label: 'asesores en Moncloa',
+                subtext: 'Récord histórico · Sánchez 2026',
+                trend: 'up' as const,
+              },
+            },
+            {
+              mode: 'split-left' as const,
+              startFrame: 260,
+              endFrame: 390,
+              panel: {
+                type: 'list' as const,
+                title: 'Sin transparencia',
+                items: ['Sueldos ocultos', 'Sin contrato público', 'Cargos de confianza'],
+              },
+            },
+            {
+              mode: 'stat-pop' as const,
+              startFrame: 420,
+              endFrame: 470,
+              value: '1.264',
+              label: 'M€ coste estimado',
+              subtext: 'Solo en asesores',
+            },
+          ],
         }}
       />
     </>

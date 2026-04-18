@@ -94,20 +94,62 @@ body{
 .no-signal-ico{font-size:2.5rem}
 
 /* ── TELEPROMPTER ON PREVIEW ── */
+/* ── TELEPROMPTER ON-CAMERA — texto grande centrado para mantener la mirada ── */
 .preview-tp{
-  position:absolute;bottom:0;left:0;right:0;
-  background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.65) 60%,transparent 100%);
-  padding:32px 20px 14px;
-  display:none;flex-direction:column;align-items:center;gap:6px;
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(2px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   pointer-events:none;
+  z-index:10;
 }
 .preview-tp.visible{display:flex}
-.preview-tp-type{font-size:.55rem;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:rgba(255,255,255,.45)}
-.preview-tp-text{font-size:1rem;font-weight:800;color:#fff;text-align:center;line-height:1.4;letter-spacing:-.01em;max-width:90%}
-.preview-tp-nav{display:flex;align-items:center;gap:8px;margin-top:2px}
-.preview-tp-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}
-.preview-tp-dot.active{background:#fff;width:14px;border-radius:3px}
-.preview-tp-toggle{position:absolute;bottom:10px;right:10px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:rgba(255,255,255,.7);font-size:.6rem;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);pointer-events:all;font-family:'Manrope',sans-serif;letter-spacing:.5px}
+
+/* Número de escena — pequeño, arriba */
+.preview-tp-type{
+  position:absolute;top:18px;left:0;right:0;
+  text-align:center;
+  font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:4px;
+  color:rgba(255,255,255,.35);
+}
+
+/* EL TEXTO — grande, centrado, máxima legibilidad */
+.preview-tp-text{
+  font-size:2.6rem;font-weight:800;
+  color:#fff;text-align:center;
+  line-height:1.4;letter-spacing:-.02em;
+  max-width:88%;
+  text-shadow:0 2px 24px rgba(0,0,0,.9);
+  /* Borde sutil para legibilidad sobre cualquier fondo */
+  -webkit-text-stroke:.5px rgba(255,255,255,.15);
+}
+
+/* Puntos de navegación — debajo del texto */
+.preview-tp-nav{display:flex;align-items:center;gap:10px;margin-top:8px}
+.preview-tp-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}
+.preview-tp-dot.active{background:#fff;width:20px;border-radius:4px;box-shadow:0 0 8px rgba(255,255,255,.5)}
+
+/* Flecha "siguiente" — toque para avanzar */
+.preview-tp-hint{
+  position:absolute;bottom:22px;left:0;right:0;
+  text-align:center;
+  font-size:.6rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.2);
+  pointer-events:none;
+}
+
+/* Botón toggle — siempre visible en la esquina */
+.preview-tp-toggle{
+  position:absolute;bottom:10px;right:10px;
+  padding:5px 12px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(0,0,0,.55);color:rgba(255,255,255,.65);
+  font-size:.62rem;font-weight:700;cursor:pointer;
+  backdrop-filter:blur(8px);pointer-events:all;
+  font-family:'Manrope',sans-serif;letter-spacing:.5px;
+  z-index:20;transition:all .2s;
+}
+.preview-tp-toggle:hover{background:rgba(0,0,0,.8);color:#fff;border-color:rgba(255,255,255,.4)}
 
 /* ── AUDIO METER ── */
 .meter-row{display:flex;align-items:center;gap:10px;padding:0 2px}
@@ -320,11 +362,12 @@ body{
         <div class="no-signal-ico">📷</div>
         <div>Activa una fuente de vídeo</div>
       </div>
-      <!-- Teleprompter overlay sobre la cámara -->
+      <!-- Teleprompter overlay sobre la cámara — centrado para mantener contacto visual -->
       <div class="preview-tp" id="previewTp">
         <div class="preview-tp-type" id="previewTpType">▶ ESCENA 1</div>
         <div class="preview-tp-text" id="previewTpText">Cargando guión…</div>
         <div class="preview-tp-nav"  id="previewTpNav"></div>
+        <div class="preview-tp-hint">← · → para navegar</div>
       </div>
       <button class="preview-tp-toggle" id="tpToggleBtn" onclick="togglePreviewTp()">📖 Guión</button>
     </div>
