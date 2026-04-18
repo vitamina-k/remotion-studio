@@ -1,39 +1,41 @@
 {
-  "title": "609 asesores en Moncloa — Sánchez bate su récord",
+  "title": "609 asesores — Sánchez bate su récord",
   "scenes": [
     {
       "type": "hook",
       "durationFrames": 210,
-      "content": { "text": "609 asesores en Moncloa", "subtext": "Sánchez bate su propio récord — y nadie sabe cuánto cobra cada uno" }
+      "text": "¿Sabes cuántos asesores tiene Sánchez en Moncloa? Más que nunca. Más que nadie. Y nadie sabe exactamente cuánto cobran.",
+      "note": "Gancho. Tono directo, pausa tras cada pregunta."
     },
     {
       "type": "stat",
-      "durationFrames": 120,
-      "content": { "value": "609", "label": "asesores y personal de confianza en la Presidencia", "sublabel": "Nuevo récord histórico · Abril 2026" }
-    },
-    {
-      "type": "stat",
-      "durationFrames": 120,
-      "content": { "value": "1264", "label": "cargos de confianza en todo el gobierno", "sublabel": "453 en nivel 30 — el más alto" }
-    },
-    {
-      "type": "comparison",
       "durationFrames": 150,
-      "content": {
-        "title": "Gasto en personal eventual",
-        "left":  { "label": "2018", "value": "40,4M €", "sublabel": "Presupuesto inicial" },
-        "right": { "label": "2025", "value": "71,2M €", "sublabel": "+76,5% de incremento" }
-      }
+      "text": "609 asesores solo en Presidencia. Es el máximo histórico. Y en todo el Gobierno suman 1.264 cargos de confianza.",
+      "note": "Énfasis en '609' y '1.264'. Habla despacio."
     },
     {
       "type": "keyword",
       "durationFrames": 180,
-      "content": { "text": "Sin nombres, sin funciones, sin salarios. Cero transparencia sobre quién cobra y por qué", "highlight": "Cero transparencia" }
+      "text": "El 63 por ciento están en los rangos más altos. 453 en nivel 30. El máximo. Sin oposición. Sin concurso público.",
+      "note": "Pausa después de 'sin oposición' y 'sin concurso público'."
     },
     {
-      "type": "quote",
-      "durationFrames": 210,
-      "content": { "text": "\"El gasto real en eventuales ha subido casi un 90% desde 2018.\"", "subtext": "The Objective · 18 de abril de 2026" }
+      "type": "stat",
+      "durationFrames": 150,
+      "text": "En 2018 el Gobierno gastaba 40 millones en asesores. En 2025: 71 millones. Un aumento del 76 por ciento. En solo siete años.",
+      "note": "Énfasis en el contraste: '40 millones' vs '71 millones'."
+    },
+    {
+      "type": "comparison",
+      "durationFrames": 180,
+      "text": "Y todo esto mientras la legislatura está encallada. Sin presupuestos. Sin mayoría. Más asesores, menos leyes.",
+      "note": "Ironía deliberada. Baja el ritmo al final."
+    },
+    {
+      "type": "cta",
+      "durationFrames": 120,
+      "text": "Si crees que hay que contarlo, dale a seguir. Porque esto no sale en el telediario.",
+      "note": "Míralo directo a cámara. Tono tranquilo pero firme."
     }
   ]
 }

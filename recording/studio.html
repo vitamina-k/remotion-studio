@@ -1145,9 +1145,9 @@ function renderPreviewTp() {
   const sc = tp.scenes[tp.current];
   if (!sc || !tpVisible) return;
   const icon = SCENE_ICONS[sc.type] || '▶';
-  const text = sc.content?.text || sc.content?.label || sc.content?.value || sc.type;
+  const text = sc.text || sc.content?.text || sc.content?.label || sc.content?.value || sc.type;
   document.getElementById('previewTpType').textContent = `${icon} ESCENA ${tp.current + 1}/${tp.scenes.length}`;
-  document.getElementById('previewTpText').textContent = String(text).slice(0, 140);
+  document.getElementById('previewTpText').textContent = String(text);
   document.getElementById('previewTpNav').innerHTML = tp.scenes.map((_, i) =>
     `<div class="preview-tp-dot${i === tp.current ? ' active' : ''}"></div>`
   ).join('');
@@ -1163,7 +1163,7 @@ function renderSceneList() {
     const fps  = 30;
     const secs = Math.round((sc.durationFrames || 90) / fps);
     const icon = SCENE_ICONS[sc.type] || '▶';
-    const text = sc.content?.text || sc.content?.label || sc.content?.value || sc.type;
+    const text = sc.text || sc.content?.text || sc.content?.label || sc.content?.value || sc.type;
     const cls  = i === tp.current ? 'scene-card current' : i < tp.current ? 'scene-card past' : 'scene-card';
     return `<div class="${cls}" id="sc-${i}" onclick="jumpScene(${i})">
       <div class="scene-card-type">${icon} ${sc.type}</div>

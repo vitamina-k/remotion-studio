@@ -480,14 +480,14 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="HybridReel"
         component={HybridReel}
-        durationInFrames={500}
+        durationInFrames={1200}
         fps={BRAND.fps}
         width={BRAND.widthVertical}
         height={BRAND.heightVertical}
         schema={hybridReelSchema}
         defaultProps={{
           videoSrc: 'http://localhost:3001/recordings/rec_2026-04-18-18-18-47.webm',
-          durationFrames: 500,
+          durationFrames: 1200,
           captions: [
             {"word":"Hola,","start":0.78,"end":1.46},{"word":"probando","start":1.62,"end":2.02},
             {"word":"uno,","start":2.02,"end":2.72},{"word":"dos,","start":2.84,"end":3.06},
@@ -514,10 +514,11 @@ export const RemotionRoot: React.FC = () => {
           ctaDurationFrames: 50,
           accentColor: '#E63946',
           segments: [
+            // Escena 2 (~5s–12s): "609 asesores" panel
             {
               mode: 'split-right' as const,
-              startFrame: 80,
-              endFrame: 220,
+              startFrame: 150,
+              endFrame: 360,
               panel: {
                 type: 'stat' as const,
                 value: '609',
@@ -526,23 +527,48 @@ export const RemotionRoot: React.FC = () => {
                 trend: 'up' as const,
               },
             },
+            // Escena 3 (~13s–20s): "1.264 cargos" panel
             {
-              mode: 'split-left' as const,
-              startFrame: 260,
-              endFrame: 390,
+              mode: 'split-right' as const,
+              startFrame: 420,
+              endFrame: 600,
               panel: {
-                type: 'list' as const,
-                title: 'Sin transparencia',
-                items: ['Sueldos ocultos', 'Sin contrato público', 'Cargos de confianza'],
+                type: 'stat' as const,
+                value: '1.264',
+                label: 'cargos de confianza en todo el Gobierno',
+                trend: 'up' as const,
               },
             },
+            // Escena 4 (~22s–28s): "sin oposición" lista
+            {
+              mode: 'split-left' as const,
+              startFrame: 660,
+              endFrame: 840,
+              panel: {
+                type: 'list' as const,
+                title: 'Sin concurso público',
+                items: ['453 en nivel 30', 'El rango más alto', 'Sin oposición'],
+              },
+            },
+            // Escena 5 (~29s–34s): gasto stat-pop flotante
             {
               mode: 'stat-pop' as const,
-              startFrame: 420,
-              endFrame: 470,
-              value: '1.264',
-              label: 'M€ coste estimado',
-              subtext: 'Solo en asesores',
+              startFrame: 900,
+              endFrame: 1020,
+              value: '+76%',
+              label: 'más gasto en asesores',
+              subtext: '40M€ (2018) → 71M€ (2025)',
+            },
+            // Escena 6 (~36s–40s): keyword cierre
+            {
+              mode: 'split-right' as const,
+              startFrame: 1060,
+              endFrame: 1150,
+              panel: {
+                type: 'keyword' as const,
+                headline: 'Esto no sale en el telediario',
+                highlight: 'telediario',
+              },
             },
           ],
         }}
