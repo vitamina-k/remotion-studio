@@ -301,7 +301,7 @@ export const RemotionRoot: React.FC = () => {
           captionPosition: 'center' as const,
           background: BRAND.colors.black,
           captions: [{"word":"Hola,","start":0.78,"end":1.46},{"word":"probando","start":1.62,"end":2.02},{"word":"uno,","start":2.02,"end":2.72},{"word":"dos,","start":2.84,"end":3.06},{"word":"tres,","start":3.32,"end":3.56},{"word":"cuatro,","start":3.68,"end":4.12},{"word":"probando,","start":4.34,"end":4.68},{"word":"probando,","start":4.76,"end":5.92},{"word":"haciendo","start":5.92,"end":6.26},{"word":"una","start":6.26,"end":6.5},{"word":"prueba","start":6.5,"end":6.7},{"word":"de","start":6.7,"end":6.9},{"word":"audio","start":6.9,"end":7.26},{"word":"para","start":7.26,"end":7.64},{"word":"una","start":7.64,"end":8.1},{"word":"grabación","start":8.1,"end":8.66},{"word":"de","start":8.66,"end":8.84},{"word":"asesores","start":8.84,"end":9.2},{"word":"y","start":9.2,"end":9.36},{"word":"personal","start":9.36,"end":9.68},{"word":"de","start":9.68,"end":9.84},{"word":"confianza","start":9.84,"end":10.32},{"word":"en","start":10.32,"end":10.4},{"word":"la","start":10.4,"end":10.46},{"word":"presidencia,","start":10.46,"end":11.06},{"word":"cargos","start":11.46,"end":11.8},{"word":"de","start":11.8,"end":11.9},{"word":"confianza","start":11.9,"end":12.62},{"word":"en","start":12.62,"end":12.9},{"word":"todo","start":12.9,"end":13.22},{"word":"el","start":13.22,"end":13.6},{"word":"gobierno","start":13.6,"end":14.2},{"word":"y","start":14.2,"end":15.02},{"word":"detenemos","start":15.02,"end":15.74},{"word":"y","start":15.74,"end":15.86},{"word":"procesamos.","start":15.86,"end":16.4}],
-          handle: '@vitamina_k',
+          handle: 'vitaminak.of',
           introTitle: '609 asesores en Moncloa',
           introDurationFrames: 45,
           ctaText: 'Sígueme para más →',
@@ -552,14 +552,14 @@ export const RemotionRoot: React.FC = () => {
             {"word":"televiario.","start":48.42,"end":48.96},
           ],
           showCaptions: true,
-          handle: '@vitamina_k',
+          handle: 'vitaminak.of',
           ctaText: 'Sígueme para más →',
           ctaDurationFrames: 80,
           accentColor: '#E63946',
           segments: [
             // 8.1s "609 asesores" → panel split derecha  (f243–f420)
             {
-              mode: 'split-right' as const,
+              mode: 'split-bottom' as const,
               startFrame: 230,
               endFrame: 420,
               panel: {
@@ -572,7 +572,7 @@ export const RemotionRoot: React.FC = () => {
             },
             // 12.5s "1.264 cargos" → panel split derecha  (f375–f500)
             {
-              mode: 'split-right' as const,
+              mode: 'split-bottom' as const,
               startFrame: 435,
               endFrame: 560,
               panel: {
@@ -584,7 +584,7 @@ export const RemotionRoot: React.FC = () => {
             },
             // 14.4s "63%…453 nivel 30" → lista split izquierda  (f432–f670)
             {
-              mode: 'split-left' as const,
+              mode: 'split-top' as const,
               startFrame: 580,
               endFrame: 690,
               panel: {
@@ -604,7 +604,7 @@ export const RemotionRoot: React.FC = () => {
             },
             // 43.26s CTA → keyword cierre  (f1298–f1420)
             {
-              mode: 'split-right' as const,
+              mode: 'split-bottom' as const,
               startFrame: 1300,
               endFrame: 1430,
               panel: {
