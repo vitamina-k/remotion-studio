@@ -1,0 +1,411 @@
+import { Composition } from "remotion";
+import { HelloWorld, myCompSchema } from "./HelloWorld";
+import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
+import { CaptionVideo, captionVideoSchema } from "./compositions/CaptionVideo";
+import { DataStory, dataStorySchema, totalFrames } from "./compositions/DataStory";
+import { FootageWithOverlay, footageWithOverlaySchema } from "./compositions/FootageWithOverlay";
+import { PoliticalReel, politicalReelSchema, reelTotalFrames } from "./compositions/PoliticalReel";
+import { SplitReel, splitReelSchema, splitReelTotalFrames } from "./compositions/SplitReel";
+import { TextReveal, textRevealSchema } from "./compositions/TextReveal";
+import { SplitScreen, splitScreenSchema } from "./compositions/SplitScreen";
+import { BRAND } from "./brand/brand";
+
+// ─── Escenas de ejemplo — todas las escenas nuevas ────────────────────────────
+
+const dataStoryExampleScenes: React.ComponentProps<typeof DataStory>['scenes'] = [
+  // 1. Título — texto viene de abajo, "agosto" en rojo
+  {
+    type: 'title',
+    durationFrames: 115,
+    content: {
+      text: 'Trabajas para el Estado\nhasta el 18 de agosto',
+      subtext: 'Día de la Liberación Fiscal 2025 — España',
+      direction: 'up',
+      highlightWords: ['agosto'],
+    },
+  },
+  // 2. Keyword — spotlight sobre las palabras clave, blur en el resto
+  {
+    type: 'keyword',
+    durationFrames: 130,
+    content: {
+      text: 'El gobierno tomó 228 días de tu trabajo este año',
+      highlight: '228 días',
+    },
+  },
+  // 3. Stat — número negativo en rojo con flecha abajo
+  {
+    type: 'stat',
+    durationFrames: 100,
+    content: {
+      value: '-62',
+      suffix: '%',
+      label: 'del año trabajas para el Estado',
+      trend: 'down',
+    },
+  },
+  // 4. Chart — barras que suben, rojo = negativo
+  {
+    type: 'chart',
+    durationFrames: 130,
+    content: {
+      title: 'Presión fiscal — Evolución (% del año)',
+      bars: [
+        { label: '2021', value: -58, suffix: '%' },
+        { label: '2022', value: -60, suffix: '%' },
+        { label: '2023', value: -61, suffix: '%' },
+        { label: '2024', value: -62, suffix: '%' },
+      ],
+    },
+  },
+  // 5. Comparison — España vs Media EU, con colores automáticos
+  {
+    type: 'comparison',
+    durationFrames: 100,
+    content: {
+      title: 'Presión fiscal comparada',
+      left: { label: 'España', value: '-62%', sublabel: '228 días al año' },
+      right: { label: 'Media UE', value: '-43%', sublabel: '157 días al año' },
+    },
+  },
+  // 6. Quote — cita final
+  {
+    type: 'quote',
+    durationFrames: 145,
+    content: {
+      text: '"Solo a partir del 18 de agosto\nempiezas a trabajar para ti."',
+      subtext: 'Fundación Civismo · Informe 2025',
+    },
+  },
+];
+
+// ─── Video 1 — Sincronizado con Whisper (38.7s = 1161 frames @ 30fps) ─────────
+// Segmentos: 0-7.8s | 8.7-9s | 9.7-16s | 16.2-21.5s | 22.1-26s | 26-31.4s | 32.1-38.7s
+
+const video1Captions = [{"word":"Después","start":0.0,"end":1.14},{"word":"de","start":1.14,"end":1.34},{"word":"leer","start":1.34,"end":1.44},{"word":"este","start":1.44,"end":1.62},{"word":"comentario,","start":1.62,"end":2.12},{"word":"me","start":2.6,"end":3.14},{"word":"hago","start":3.14,"end":3.24},{"word":"una","start":3.24,"end":3.38},{"word":"pregunta,","start":3.38,"end":3.68},{"word":"¿es","start":4.04,"end":4.16},{"word":"culpable","start":4.16,"end":4.58},{"word":"Alvise","start":4.58,"end":4.94},{"word":"de","start":5.88,"end":6.12},{"word":"haber","start":6.12,"end":6.26},{"word":"robado","start":6.26,"end":6.76},{"word":"votos","start":6.76,"end":7.3},{"word":"a","start":7.3,"end":7.62},{"word":"Vox?","start":7.62,"end":7.8},{"word":"No.","start":8.68,"end":8.98},{"word":"La","start":9.72,"end":10.22},{"word":"realidad","start":10.22,"end":10.54},{"word":"es","start":10.54,"end":10.9},{"word":"que","start":10.9,"end":11.02},{"word":"ha","start":11.02,"end":11.2},{"word":"habido","start":11.2,"end":11.32},{"word":"una","start":11.32,"end":11.46},{"word":"fuga","start":11.46,"end":11.82},{"word":"masiva","start":11.82,"end":12.4},{"word":"de","start":12.4,"end":12.56},{"word":"confianza,","start":12.56,"end":13.14},{"word":"una","start":13.22,"end":13.32},{"word":"pérdida","start":13.32,"end":13.76},{"word":"de","start":13.76,"end":14.3},{"word":"confianza","start":14.3,"end":15.06},{"word":"de","start":15.06,"end":15.22},{"word":"los","start":15.22,"end":15.36},{"word":"afiliados,","start":15.36,"end":16.06},{"word":"a","start":16.24,"end":16.38},{"word":"los","start":16.38,"end":16.56},{"word":"seguidores","start":16.56,"end":17.12},{"word":"o","start":17.12,"end":17.44},{"word":"votantes","start":17.44,"end":17.86},{"word":"de","start":17.86,"end":18.08},{"word":"Vox","start":18.08,"end":18.36},{"word":"por","start":18.36,"end":18.92},{"word":"culpa","start":18.92,"end":19.14},{"word":"de","start":19.14,"end":19.3},{"word":"la","start":19.3,"end":19.38},{"word":"purga","start":19.38,"end":19.68},{"word":"masiva","start":19.68,"end":20.02},{"word":"que","start":20.02,"end":20.16},{"word":"ha","start":20.16,"end":20.26},{"word":"estado","start":20.26,"end":20.42},{"word":"haciendo","start":20.42,"end":20.72},{"word":"Santiago","start":20.72,"end":21.06},{"word":"Abascal.","start":21.06,"end":21.46},{"word":"Porque","start":22.14,"end":22.62},{"word":"Ortega","start":22.62,"end":23.62},{"word":"Smith","start":23.62,"end":23.8},{"word":"era","start":23.8,"end":23.98},{"word":"el","start":23.98,"end":24.1},{"word":"bueno,","start":24.1,"end":24.24},{"word":"ahora","start":24.68,"end":25.02},{"word":"es","start":25.02,"end":25.5},{"word":"el","start":25.5,"end":25.64},{"word":"malo.","start":25.64,"end":26.06},{"word":"Todos","start":26.06,"end":26.58},{"word":"los","start":26.58,"end":26.78},{"word":"que","start":26.78,"end":26.94},{"word":"forman","start":26.94,"end":27.28},{"word":"parte","start":27.28,"end":27.58},{"word":"de","start":27.58,"end":27.96},{"word":"ese","start":27.96,"end":28.14},{"word":"grupo","start":28.14,"end":28.46},{"word":"de","start":28.46,"end":28.9},{"word":"Ortega","start":28.9,"end":29.26},{"word":"Smith,","start":29.26,"end":29.44},{"word":"todos","start":29.64,"end":29.84},{"word":"son","start":29.84,"end":30.14},{"word":"malos,","start":30.14,"end":30.56},{"word":"antes","start":30.62,"end":30.88},{"word":"eran","start":30.88,"end":31.16},{"word":"buenos.","start":31.16,"end":31.44},{"word":"Ahora","start":32.1,"end":32.42},{"word":"hay","start":32.42,"end":32.56},{"word":"algunos","start":32.56,"end":32.8},{"word":"comentarios:","start":32.8,"end":33.32},{"word":"vosotros","start":34.62,"end":35.16},{"word":"elegidos","start":35.48,"end":36.0},{"word":"a","start":36.34,"end":36.44},{"word":"dedos,","start":36.44,"end":36.74},{"word":"calladitos,","start":36.92,"end":37.54},{"word":"ahora","start":37.7,"end":37.84},{"word":"son","start":37.84,"end":38.02},{"word":"los","start":38.02,"end":38.14},{"word":"malos.","start":38.14,"end":38.72}];
+
+// Escenas visuales sincronizadas con los timestamps de Whisper:
+// 0-8s   → hook (pregunta)                          = 0-280f
+// 8.6-9s → stat "NO"                                 = 258-280f (dentro del hook)
+// 9.7-16s → keyword "fuga masiva confianza"          = 280-490f
+// 16.2-21.5s → keyword "purga masiva Abascal"        = 490-650f  (alert bg)
+// 22.1-26s → comparison Ortega bueno vs malo         = 650-782f
+// 26-31.4s → keyword "todos malos antes buenos"      = 782-944f
+// 32.1-38.7s → quote cierre                          = 963-1162f
+
+const alviseSALFScenes: React.ComponentProps<typeof DataStory>['scenes'] = [
+  {
+    type: 'hook',
+    durationFrames: 280,   // 0-9.3s — cubre la pregunta y el "No"
+    bg: 'alert' as const,
+    content: {
+      text: '¿Es culpable Alvise\nde robar votos a VOX?',
+      subtext: 'Respuesta: NO — aquí la verdad',
+    },
+  },
+  {
+    type: 'keyword',
+    durationFrames: 210,   // 9.3-16.3s
+    content: {
+      text: 'Ha habido una fuga masiva de confianza y pérdida entre los afiliados',
+      highlight: 'fuga masiva confianza',
+    },
+  },
+  {
+    type: 'keyword',
+    durationFrames: 160,   // 16.3-21.6s
+    bg: 'alert' as const,
+    content: {
+      text: 'Por culpa de la purga masiva que ha estado haciendo Santiago Abascal',
+      highlight: 'purga masiva Abascal',
+    },
+  },
+  {
+    type: 'comparison',
+    durationFrames: 132,   // 21.6-26s
+    content: {
+      title: 'Ortega Smith según Abascal',
+      left: { label: 'Antes', value: 'BUENO', sublabel: 'Aliado de confianza', color: '#22C55E' },
+      right: { label: 'Ahora', value: 'MALO', sublabel: 'Traidor — purga activa', color: '#E63946' },
+    },
+  },
+  {
+    type: 'keyword',
+    durationFrames: 162,   // 26-31.4s
+    bg: 'grid' as const,
+    content: {
+      text: 'Todos los que forman parte del grupo Ortega Smith son malos ahora antes eran buenos',
+      highlight: 'malos buenos',
+    },
+  },
+  {
+    type: 'quote',
+    durationFrames: 212,   // 32.1-38.7s
+    content: {
+      text: '"Elegidos a dedos, calladitos.\nAhora son los malos."',
+      subtext: 'Video 1 · Análisis VOX interno',
+    },
+  },
+];
+
+// ─── Composiciones ────────────────────────────────────────────────────────────
+
+export const RemotionRoot: React.FC = () => {
+  return (
+    <>
+      <Composition
+        id="HelloWorld"
+        component={HelloWorld}
+        durationInFrames={150}
+        fps={30}
+        width={1920}
+        height={1080}
+        schema={myCompSchema}
+        defaultProps={{
+          titleText: "Welcome to Remotion",
+          titleColor: "#000000",
+          logoColor1: "#91EAE4",
+          logoColor2: "#86A8E7",
+        }}
+      />
+
+      <Composition
+        id="OnlyLogo"
+        component={Logo}
+        durationInFrames={150}
+        fps={30}
+        width={1920}
+        height={1080}
+        schema={myCompSchema2}
+        defaultProps={{
+          logoColor1: "#91dAE2" as const,
+          logoColor2: "#86A8E7" as const,
+        }}
+      />
+
+      <Composition
+        id="CaptionVideo"
+        component={CaptionVideo}
+        durationInFrames={180}
+        fps={BRAND.fps}
+        width={BRAND.width}
+        height={BRAND.height}
+        schema={captionVideoSchema}
+        defaultProps={{
+          transcript: [
+            { word: 'Esto',    start: 0.0, end: 1.0 },
+            { word: 'es',      start: 1.0, end: 1.8 },
+            { word: 'un',      start: 1.8, end: 2.4 },
+            { word: 'caption', start: 2.4, end: 3.8 },
+            { word: 'animado', start: 3.8, end: 5.0 },
+            { word: 'con',     start: 5.0, end: 5.6 },
+            { word: 'Remotion',start: 5.6, end: 6.0 },
+          ],
+          fontSize: 72,
+          color: BRAND.colors.white,
+          highlightColor: BRAND.colors.accent,
+          background: BRAND.colors.black,
+        }}
+      />
+
+      <Composition
+        id="DataStory"
+        component={DataStory}
+        durationInFrames={totalFrames(alviseSALFScenes)}
+        fps={BRAND.fps}
+        width={BRAND.width}
+        height={BRAND.height}
+        schema={dataStorySchema}
+        defaultProps={{
+          scenes: alviseSALFScenes,
+          background: "#080808",
+          accentColor: "#22C55E",
+        }}
+      />
+
+      <Composition
+        id="FootageWithOverlay"
+        component={FootageWithOverlay}
+        durationInFrames={1162}
+        fps={BRAND.fps}
+        width={BRAND.widthVertical}
+        height={BRAND.heightVertical}
+        schema={footageWithOverlaySchema}
+        defaultProps={{
+          videoSrc: 'http://localhost:3001/recordings/video%201.mp4',
+          durationFrames: 1162,
+          showCaptions: true,
+          captionPosition: 'center' as const,
+          background: BRAND.colors.black,
+          captions: video1Captions,
+          handle: '@vitamina_k',
+          introTitle: '¿Es culpable Alvise?',
+          introDurationFrames: 45,
+          ctaText: 'Sígueme para más →',
+          ctaDurationFrames: 50,
+          lowerThird: {
+            name: 'Kevin Pérez',
+            title: 'VOX · Análisis interno',
+            showAtFrame: 50,
+            hideAtFrame: 1100,
+          },
+        }}
+      />
+
+      <Composition
+        id="PoliticalReel"
+        component={PoliticalReel}
+        durationInFrames={reelTotalFrames(dataStoryExampleScenes, 600)}
+        fps={BRAND.fps}
+        width={BRAND.widthVertical}
+        height={BRAND.heightVertical}
+        schema={politicalReelSchema}
+        defaultProps={{
+          scenes: dataStoryExampleScenes,
+          background: BRAND.colors.black,
+          accentColor: BRAND.colors.accent,
+          videoSrc: 'http://localhost:3001/recordings/video-prueba.mp4',
+          footageDurationFrames: 600,
+          showCaptions: false,
+          captionPosition: 'bottom' as const,
+          captions: [],
+          lowerThird: {
+            name: 'Kevin García',
+            title: 'Liberación Fiscal 2025',
+            showAtFrame: 30,
+            hideAtFrame: 570,
+          },
+        }}
+      />
+      {/* SplitReel: datos arriba, tú grabado abajo — formato vertical 1080×1920 */}
+      <Composition
+        id="SplitReel"
+        component={SplitReel}
+        durationInFrames={splitReelTotalFrames(300)}
+        fps={BRAND.fps}
+        width={BRAND.widthVertical}
+        height={BRAND.heightVertical}
+        schema={splitReelSchema}
+        defaultProps={{
+          scenes: [
+            {
+              type: "title" as const,
+              durationFrames: 0,
+              content: {
+                text: "",
+                subtext: "",
+                direction: "up" as const,
+                highlightWords: [""],
+              },
+            },
+            {
+              type: "keyword" as const,
+              durationFrames: 130,
+              content: {
+                text: "El gobierno tomó 228 días de tu trabajo este año",
+                highlight: "228 días",
+              },
+            },
+            {
+              type: "stat" as const,
+              durationFrames: 100,
+              content: {
+                value: "-62",
+                suffix: "%",
+                label: "del año trabajas para el Estado",
+                trend: "down" as const,
+              },
+            },
+            {
+              type: "chart" as const,
+              durationFrames: 130,
+              content: {
+                title: "Presión fiscal — Evolución (% del año)",
+                bars: [
+                  { label: "2021", value: -58, suffix: "%" },
+                  { label: "2022", value: -60, suffix: "%" },
+                  { label: "2023", value: -61, suffix: "%" },
+                  { label: "2024", value: -62, suffix: "%" },
+                ],
+              },
+            },
+            {
+              type: "comparison" as const,
+              durationFrames: 100,
+              content: {
+                title: "Presión fiscal comparada",
+                left: {
+                  label: "España",
+                  value: "-62%",
+                  sublabel: "228 días al año",
+                },
+                right: {
+                  label: "Media UE",
+                  value: "-43%",
+                  sublabel: "157 días al año",
+                },
+              },
+            },
+            {
+              type: "quote" as const,
+              durationFrames: 145,
+              content: {
+                text: '"Solo a partir del 18 de agosto\nempiezas a trabajar para ti."',
+                subtext: "Fundación Civismo · Informe 2025",
+              },
+            },
+          ],
+          accentColor: "#E63946",
+          background: "#080808",
+          videoSrc:
+            "http://localhost:3001/recordings/rec_2026-04-15-17-48-36.webm",
+          videoDurationFrames: 300,
+          splitRatio: 0.6,
+          presenterName: "Kevin Pérez",
+          presenterTitle: "Vitamina K",
+          loopDataAnimation: true,
+        }}
+      />
+      {/* TextReveal: frase protagonista palabra por palabra — 1080×1080 */}
+      <Composition
+        id="TextReveal"
+        component={TextReveal}
+        durationInFrames={90}
+        fps={BRAND.fps}
+        width={BRAND.width}
+        height={BRAND.height}
+        schema={textRevealSchema}
+        defaultProps={{
+          text: 'La IA cambia todo',
+          fontSize: 120,
+          theme: 'dark' as const,
+          durationFrames: 90,
+        }}
+      />
+
+      {/* SplitScreen: dos columnas 50/50 con valor grande + texto — 1080×1080 */}
+      <Composition
+        id="SplitScreen"
+        component={SplitScreen}
+        durationInFrames={150}
+        fps={BRAND.fps}
+        width={BRAND.width}
+        height={BRAND.height}
+        schema={splitScreenSchema}
+        defaultProps={{
+          left: {
+            label: 'España',
+            value: '-62%',
+            sublabel: '228 días trabajando para el Estado',
+          },
+          right: {
+            text: 'Media UE solo dedica 157 días al año en impuestos',
+            subtext: 'Fundación Civismo · Informe 2025',
+          },
+          theme: 'dark' as const,
+          durationFrames: 150,
+        }}
+      />
+    </>
+  );
+};

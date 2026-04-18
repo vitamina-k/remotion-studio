@@ -1,0 +1,48 @@
+{
+  "name": "template-helloworld",
+  "version": "1.0.0",
+  "description": "My Remotion video",
+  "scripts": {
+    "dev": "remotion studio",
+    "record": "node record-server.js",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade",
+    "lint": "eslint src && tsc"
+  },
+  "repository": {},
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@remotion/gif": "^4.0.448",
+    "@remotion/google-fonts": "^4.0.448",
+    "@remotion/lottie": "^4.0.448",
+    "@remotion/media-utils": "^4.0.448",
+    "@remotion/motion-blur": "^4.0.448",
+    "@remotion/noise": "^4.0.448",
+    "@remotion/paths": "^4.0.448",
+    "@remotion/player": "^4.0.448",
+    "@remotion/shapes": "^4.0.448",
+    "@remotion/skia": "^4.0.448",
+    "@remotion/three": "^4.0.448",
+    "@remotion/transitions": "^4.0.448",
+    "@remotion/zod-types": "^4.0.0",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "qrcode": "^1.5.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "^4.0.0",
+    "selfsigned": "^5.5.0",
+    "socket.io": "^4.8.3",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "^4.0.0",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.19.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "private": true
+}

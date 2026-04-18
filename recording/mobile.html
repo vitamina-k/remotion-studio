@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Recording Studio — Móvil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F0EFEB; --surface:#FFFFFF; --surface2:#F5F4F0; --surface3:#ECEAE4;
+  --border:#E2DFD8; --border2:#C9C5BC;
+  --text:#1A1917; --text2:#5A5652; --text3:#9A9690;
+  --accent:#4E80EE; --accent-dim:rgba(78,128,238,.08); --accent-b:rgba(78,128,238,.2);
+  --green:#15803D; --green-dim:rgba(21,128,61,.08); --green-b:rgba(21,128,61,.2);
+  --red:#B91C1C; --red-dim:rgba(185,28,28,.08); --red-b:rgba(185,28,28,.2);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+body{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:0;height:100dvh}
+
+/* Header */
+.header{width:100%;background:rgba(255,255,255,.92);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;backdrop-filter:blur(16px)}
+.logo{font-size:.9rem;font-weight:800;color:var(--text)}
+.logo em{color:var(--accent);font-style:normal}
+.status-pill{display:flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:.68rem;font-weight:700;letter-spacing:.5px;border:1px solid var(--border2);background:var(--surface3);color:var(--text3);transition:all .3s}
+.status-pill.connecting{border-color:var(--accent-b);background:var(--accent-dim);color:var(--accent)}
+.status-pill.connected  {border-color:var(--green-b);background:var(--green-dim);color:var(--green)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* Main content */
+.content{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;padding:20px 16px;flex:1;overflow-y:auto}
+
+/* Camera preview */
+.cam-wrap{width:100%;border-radius:16px;overflow:hidden;background:#000;border:1px solid var(--border);position:relative;aspect-ratio:9/16;max-height:55dvh}
+.cam-video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+.cam-overlay{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start}
+.cam-badge{padding:5px 12px;border-radius:20px;font-size:.65rem;font-weight:700;backdrop-filter:blur(8px);background:rgba(0,0,0,.5);color:#fff;letter-spacing:.5px}
+.cam-flip{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+
+/* Cards */
+.card{width:100%;background:var(--surface);border-radius:14px;border:1px solid var(--border);overflow:hidden}
+.card-head{padding:13px 16px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);border-bottom:1px solid var(--border)}
+.card-body{padding:14px 16px}
+
+/* Connect button */
+.connect-btn{
+  width:100%;padding:16px;border-radius:14px;border:none;
+  font-size:1rem;font-weight:800;cursor:pointer;
+  transition:all .2s;font-family:'Manrope',sans-serif;
+  letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.connect-btn.ready      {background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(78,128,238,.3)}
+.connect-btn.ready:hover{background:#3A6FDE;transform:translateY(-1px)}
+.connect-btn.connecting {background:var(--surface3);color:var(--text3);cursor:wait}
+.connect-btn.connected  {background:var(--green-dim);color:var(--green);border:2px solid var(--green-b);cursor:default}
+.connect-btn.error      {background:var(--red-dim);color:var(--red);border:2px solid var(--red-b)}
+
+/* Device selectors */
+.dev-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:.82rem;color:var(--text);font-family:'Manrope',sans-serif;outline:none;margin-top:8px;-webkit-appearance:none}
+.dev-label{font-size:.7rem;font-weight:600;color:var(--text3);letter-spacing:.3px}
+
+/* Stats */
+.stats-row{display:flex;gap:10px}
+.stat-box{flex:1;background:var(--surface2);border-radius:10px;border:1px solid var(--border);padding:11px 12px;text-align:center}
+.stat-val{font-size:1rem;font-weight:800;font-family:'Space Mono',monospace;color:var(--text)}
+.stat-lbl{font-size:.6rem;color:var(--text3);margin-top:3px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+
+/* Meter */
+.meter-wrap{height:10px;border-radius:5px;background:var(--surface3);border:1px solid var(--border);overflow:hidden;margin-top:10px}
+.meter-fill{height:100%;width:0%;border-radius:5px;transition:width .05s;background:linear-gradient(to right,var(--green) 0%,#84cc16 60%,#eab308 80%,var(--red) 100%)}
+
+/* Tips */
+.tip{font-size:.72rem;color:var(--text3);line-height:1.6;text-align:center}
+.tip strong{color:var(--text);font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="logo">🎬 <em>Studio</em> Móvil</span>
+  <div class="status-pill" id="statusPill">
+    <div class="status-dot"></div>
+    <span id="statusTxt">Desconectado</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- Preview -->
+  <div class="cam-wrap" id="camWrap" style="display:none">
+    <video class="cam-video" id="camVideo" autoplay muted playsinline></video>
+    <div class="cam-overlay">
+      <span class="cam-badge" id="camBadge">📷 Trasera</span>
+      <button class="cam-flip" onclick="flipCamera()" title="Cambiar cámara">🔄</button>
+    </div>
+  </div>
+
+  <!-- Connect button -->
+  <button class="connect-btn ready" id="connectBtn" onclick="connect()">
+    <span>📡</span><span id="connectBtnTxt">Conectar al Studio</span>
+  </button>
+
+  <!-- Remote Control -->
+  <div class="card" id="remoteCard" style="display:none">
+    <div class="card-head">🎬 Control remoto</div>
+    <div class="card-body">
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <button id="rBtnRecord" onclick="remoteCmd('record')"
+          style="flex:1;padding:14px;border-radius:12px;border:none;background:var(--red);color:#fff;font-size:1rem;font-weight:800;cursor:pointer;font-family:'Manrope',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">
+          ⏺ Grabar
+        </button>
+        <button id="rBtnPause" onclick="remoteCmd('pause')"
+          style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border2);background:var(--surface3);color:var(--text);font-size:1rem;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif">
+          ⏸
+        </button>
+        <button id="rBtnStop" onclick="remoteCmd('stop')"
+          style="flex:1;padding:14px;border-radius:12px;border:1px solid var(--border2);background:var(--surface3);color:var(--text);font-size:1rem;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif">
+          ⏹
+        </button>
+      </div>
+      <div id="remoteStatus" style="font-size:.72rem;color:var(--text3);text-align:center">
+        Listo para controlar la grabación
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats when connected -->
+  <div class="card" id="statsCard" style="display:none">
+    <div class="card-head">Estado de la conexión</div>
+    <div class="card-body">
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-val" id="statFPS">—</div><div class="stat-lbl">FPS</div></div>
+        <div class="stat-box"><div class="stat-val" id="statRes">—</div><div class="stat-lbl">Resolución</div></div>
+        <div class="stat-box"><div class="stat-val" id="statConn">WebRTC</div><div class="stat-lbl">Tipo</div></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="dev-label">Nivel de audio del móvil</div>
+        <div class="meter-wrap"><div class="meter-fill" id="micMeter"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device config -->
+  <div class="card" id="deviceCard">
+    <div class="card-head">Configuración</div>
+    <div class="card-body">
+      <div class="dev-label">Cámara</div>
+      <select class="dev-select" id="camSelect" onchange="switchCam()">
+        <option value="environment">📷 Trasera</option>
+        <option value="user">🤳 Delantera (selfie)</option>
+      </select>
+      <div class="dev-label" style="margin-top:12px">Resolución</div>
+      <select class="dev-select" id="resSelect" onchange="switchCam()">
+        <option value="hd">HD (1280×720)</option>
+        <option value="fhd" selected>Full HD (1920×1080)</option>
+        <option value="4k">4K (3840×2160)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tip -->
+  <div class="tip">
+    <strong>Tip:</strong> Mantén el navegador abierto y la pantalla encendida durante la grabación. El audio del micrófono del móvil también se transmite al studio.
+  </div>
+
+</div>
+
+<script>
+const socket = io({ query: { role: 'mobile' } });
+let pc = null;
+let localStream = null;
+let facing = 'environment';
+let facingCount = 0;
+
+const RES = {
+  hd:  { width: 1280, height: 720 },
+  fhd: { width: 1920, height: 1080 },
+  '4k': { width: 3840, height: 2160 },
+};
+
+function setStatus(state, txt) {
+  const pill = document.getElementById('statusPill');
+  pill.className = 'status-pill ' + state;
+  document.getElementById('statusTxt').textContent = txt;
+}
+
+async function getStream() {
+  const res = RES[document.getElementById('resSelect').value] || RES.fhd;
+  const constraints = {
+    video: { facingMode: facing, width: { ideal: res.width }, height: { ideal: res.height } },
+    audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000 }
+  };
+  if (localStream) localStream.getTracks().forEach(t => t.stop());
+  localStream = await navigator.mediaDevices.getUserMedia(constraints);
+  document.getElementById('camVideo').srcObject = localStream;
+  document.getElementById('camWrap').style.display = 'block';
+  document.getElementById('camBadge').textContent = facing === 'environment' ? '📷 Trasera' : '🤳 Delantera';
+
+  // stats
+  const vt = localStream.getVideoTracks()[0];
+  if (vt) {
+    const s = vt.getSettings();
+    document.getElementById('statRes').textContent = `${s.width}×${s.height}`;
+    document.getElementById('statFPS').textContent = (s.frameRate || 30).toFixed(0);
+  }
+  startMicMeter(localStream);
+  return localStream;
+}
+
+async function flipCamera() {
+  facing = facing === 'environment' ? 'user' : 'environment';
+  document.getElementById('camSelect').value = facing;
+  await switchCam();
+}
+
+async function switchCam() {
+  facing = document.getElementById('camSelect').value;
+  await getStream();
+  if (pc) {
+    const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+    if (sender) await sender.replaceTrack(localStream.getVideoTracks()[0]);
+    const senderA = pc.getSenders().find(s => s.track?.kind === 'audio');
+    if (senderA) await senderA.replaceTrack(localStream.getAudioTracks()[0]);
+  }
+}
+
+async function connect() {
+  setStatus('connecting', 'Conectando...');
+  document.getElementById('connectBtn').className = 'connect-btn connecting';
+  document.getElementById('connectBtnTxt').textContent = 'Conectando...';
+
+  try {
+    await getStream();
+  } catch(e) {
+    setStatus('', 'Error de cámara');
+    document.getElementById('connectBtn').className = 'connect-btn error';
+    document.getElementById('connectBtnTxt').textContent = '❌ Sin permiso de cámara';
+    return;
+  }
+
+  // WebRTC setup
+  pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) socket.emit('ice-candidate', e.candidate);
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') {
+      setStatus('connected', 'Conectado ✓');
+      document.getElementById('connectBtn').className = 'connect-btn connected';
+      document.getElementById('connectBtnTxt').textContent = '✅ Conectado al Studio';
+      document.getElementById('statsCard').style.display = 'block';
+      document.getElementById('remoteCard').style.display = 'block';
+    }
+    if (['disconnected','failed','closed'].includes(pc.connectionState)) {
+      setStatus('', 'Desconectado');
+      document.getElementById('connectBtn').className = 'connect-btn ready';
+      document.getElementById('connectBtnTxt').textContent = 'Reconectar';
+      document.getElementById('statsCard').style.display = 'none';
+    }
+  };
+
+  // Tell studio we're ready → studio creates offer
+  socket.emit('mobile-ready');
+}
+
+socket.on('offer', async (offer) => {
+  if (!pc) return;
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit('answer', answer);
+});
+
+socket.on('ice-candidate', async (c) => {
+  if (!pc) return;
+  try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+});
+
+socket.on('peer-left', () => {
+  setStatus('connecting', 'Studio desconectado...');
+});
+
+function startMicMeter(stream) {
+  if (!stream.getAudioTracks().length) return;
+  const ctx  = new AudioContext();
+  const src  = ctx.createMediaStreamSource(stream);
+  const anal = ctx.createAnalyser();
+  anal.fftSize = 256;
+  src.connect(anal);
+  const data = new Uint8Array(anal.frequencyBinCount);
+  const tick = () => {
+    anal.getByteFrequencyData(data);
+    const rms = Math.sqrt(data.reduce((s, v) => s + v * v, 0) / data.length);
+    document.getElementById('micMeter').style.width = Math.min(100, rms * 2.2) + '%';
+    requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+// Remote control
+function remoteCmd(action) {
+  socket.emit('remote-cmd', { action });
+  const labels = { record: '⏺ Grabando...', pause: '⏸ Pausado', stop: '⏹ Detenido' };
+  document.getElementById('remoteStatus').textContent = labels[action] || action;
+  if (action === 'record') {
+    document.getElementById('rBtnRecord').style.background = '#991b1b';
+  } else {
+    document.getElementById('rBtnRecord').style.background = 'var(--red)';
+  }
+}
+
+socket.on('rec-state', ({ state }) => {
+  const labels = { recording: '🔴 Grabando', paused: '⏸ Pausado', stopped: '⏹ Detenido', idle: 'Listo' };
+  document.getElementById('remoteStatus').textContent = labels[state] || state;
+});
+
+// Keep screen awake
+if ('wakeLock' in navigator) {
+  navigator.wakeLock.request('screen').catch(() => {});
+}
+</script>
+</body>
+</html>

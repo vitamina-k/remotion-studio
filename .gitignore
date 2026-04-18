@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Remotion output
+out/
+
+# Vídeos grabados (demasiado grandes para git)
+src/data/recordings/*.mp4
+src/data/recordings/*.webm
+src/data/recordings/*.mov
+
+# Whisper tmp (se regeneran)
+src/data/whisper_tmp/
+
+# Props generados por el servidor
+src/data/*-props.json
+src/data/*-edit-plan.json
+
+# Build / cache
+dist/
+.cache/
+.remotion/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Env / secretos
+.env
+.env.local
+
+# SSL certs generados en runtime
+*.pem

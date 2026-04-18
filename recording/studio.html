@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Recording Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0EFEB; --surface:#FFFFFF; --surface2:#F5F4F0; --surface3:#ECEAE4;
+  --border:#E2DFD8; --border2:#C9C5BC;
+  --text:#1A1917; --text2:#5A5652; --text3:#9A9690; --text4:#C5C1B8;
+  --accent:#4E80EE; --accent2:#3A6FDE;
+  --accent-dim:rgba(78,128,238,.08); --accent-b:rgba(78,128,238,.2);
+  --green:#15803D; --green-dim:rgba(21,128,61,.08); --green-b:rgba(21,128,61,.2);
+  --red:#B91C1C; --red-dim:rgba(185,28,28,.08); --red-b:rgba(185,28,28,.2);
+  --gold:#92400E; --gold-dim:rgba(146,64,14,.08); --gold-b:rgba(146,64,14,.2);
+  --r:10px; --rs:7px;
+}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Manrope',system-ui,sans-serif;
+  min-height:100vh; display:flex; flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:52px; background:rgba(255,255,255,.92); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 20px; flex-shrink:0;
+  backdrop-filter:blur(16px); position:sticky; top:0; z-index:50;
+}
+.logo{font-size:.95rem;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.logo em{color:var(--accent);font-style:normal}
+.tb-right{display:flex;align-items:center;gap:10px}
+.rec-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);transition:all .3s}
+.rec-dot.live{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.2);animation:recpulse 1.2s ease infinite}
+@keyframes recpulse{0%,100%{box-shadow:0 0 0 3px rgba(239,68,68,.2)}50%{box-shadow:0 0 0 6px rgba(239,68,68,.05)}}
+.rec-time{font-size:.78rem;font-weight:700;font-family:'Space Mono',monospace;color:var(--text3);letter-spacing:1px;min-width:52px}
+.phone-status{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:.68rem;font-weight:700;letter-spacing:.5px;background:var(--surface3);color:var(--text3);border:1px solid var(--border2);transition:all .3s}
+.phone-status.connected{background:var(--green-dim);color:var(--green);border-color:var(--green-b)}
+.phone-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:300px 1fr 280px;flex:1;gap:0;min-height:calc(100vh - 52px)}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-r{border-right:none;border-left:1px solid var(--border)}
+.s-head{padding:14px 16px 8px;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:2.5px;color:var(--text4);border-bottom:1px solid var(--border)}
+
+/* ── SOURCE CARDS ── */
+.src-card{margin:10px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--surface2);overflow:hidden;transition:all .2s;cursor:pointer}
+.src-card:hover{border-color:var(--border2)}
+.src-card.active{border-color:var(--accent);background:var(--accent-dim)}
+.src-card.active .src-icon{color:var(--accent)}
+.src-header{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.src-icon{font-size:1.3rem;transition:color .2s}
+.src-info{flex:1}
+.src-name{font-size:.8rem;font-weight:700;color:var(--text)}
+.src-sub{font-size:.65rem;color:var(--text3);margin-top:1px}
+.src-toggle{width:36px;height:20px;border-radius:10px;background:var(--border2);position:relative;transition:background .2s;cursor:pointer;flex-shrink:0;border:none}
+.src-toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.src-toggle.on{background:var(--accent)}
+.src-toggle.on::after{transform:translateX(16px)}
+.src-body{padding:0 14px 12px;display:none}
+.src-card.active .src-body{display:block}
+.src-select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:6px 10px;font-size:.73rem;color:var(--text);font-family:'Manrope',sans-serif;outline:none;margin-top:4px}
+
+/* ── QR PANEL ── */
+.qr-panel{margin:10px;border-radius:var(--r);border:1.5px dashed var(--border2);padding:16px;text-align:center;background:var(--surface2)}
+.qr-panel.connected{border-style:solid;border-color:var(--green-b);background:var(--green-dim)}
+.qr-img{width:140px;height:140px;border-radius:var(--rs);margin:0 auto 10px;display:block;border:2px solid var(--border)}
+.qr-label{font-size:.68rem;color:var(--text3);line-height:1.5;margin-bottom:6px}
+.qr-url{font-size:.6rem;font-family:'Space Mono',monospace;color:var(--text4);word-break:break-all}
+.qr-connected-msg{font-size:.8rem;font-weight:700;color:var(--green);margin-bottom:4px}
+
+/* ── MAIN PREVIEW ── */
+.main{padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.preview-wrap{position:relative;border-radius:var(--r);overflow:hidden;background:#000;border:1px solid var(--border);aspect-ratio:16/9;max-height:480px;flex-shrink:0}
+.preview-main{width:100%;height:100%;object-fit:cover;display:block;background:#111;transform:scaleX(-1)}
+.pip-wrap{position:absolute;bottom:12px;right:12px;width:180px;border-radius:8px;overflow:hidden;border:2px solid rgba(255,255,255,.25);box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.pip-video{width:100%;display:block;object-fit:cover;background:#222;transform:scaleX(-1)}
+.preview-overlay{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:8px}
+.preview-badge{padding:4px 10px;border-radius:20px;font-size:.63rem;font-weight:700;letter-spacing:1px;backdrop-filter:blur(8px)}
+.pb-pc{background:rgba(78,128,238,.85);color:#fff}
+.pb-phone{background:rgba(21,128,61,.85);color:#fff}
+.pb-mix{background:rgba(146,64,14,.85);color:#fff}
+.no-signal{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.8rem;gap:8px}
+.no-signal-ico{font-size:2.5rem}
+
+/* ── AUDIO METER ── */
+.meter-row{display:flex;align-items:center;gap:10px;padding:0 2px}
+.meter-label{font-size:.63rem;font-weight:600;color:var(--text3);width:28px;text-align:right;font-family:'Space Mono',monospace}
+.meter-bar{flex:1;height:8px;border-radius:4px;background:var(--surface3);overflow:hidden;border:1px solid var(--border)}
+.meter-fill{height:100%;border-radius:4px;width:0%;transition:width .05s;background:linear-gradient(to right,var(--green) 0%,#84cc16 60%,#eab308 80%,var(--red) 100%)}
+
+/* ── SOURCE MODE TABS ── */
+.mode-tabs{display:flex;gap:6px;padding:4px;background:var(--surface3);border-radius:var(--rs);border:1px solid var(--border)}
+.mode-tab{flex:1;padding:7px;border-radius:6px;border:none;background:transparent;font-size:.72rem;font-weight:600;color:var(--text3);cursor:pointer;transition:all .15s;font-family:'Manrope',sans-serif}
+.mode-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.07);border:1px solid var(--border)}
+
+/* ── CONTROLS ── */
+.controls{display:flex;flex-direction:column;gap:10px}
+.ctrl-row{display:flex;align-items:center;gap:8px}
+.btn{padding:10px 18px;border-radius:var(--rs);border:none;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .18s;font-family:'Manrope',sans-serif;display:flex;align-items:center;gap:7px;letter-spacing:.2px}
+.btn-record{background:var(--red);color:#fff;flex:1;justify-content:center;box-shadow:0 2px 10px rgba(185,28,28,.25)}
+.btn-record:hover{background:#991b1b;transform:translateY(-1px)}
+.btn-record:disabled{background:var(--border2);color:var(--text4);box-shadow:none;transform:none;cursor:not-allowed}
+.btn-pause{background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:10px 14px}
+.btn-pause:hover{background:var(--surface3)}
+.btn-stop{background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:10px 14px}
+.btn-stop:hover{border-color:var(--red);color:var(--red)}
+.btn-stop:disabled,.btn-pause:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── RECORDINGS LIST ── */
+.rec-list{display:flex;flex-direction:column;gap:0}
+.rec-item{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;transition:background .12s}
+.rec-item:hover{background:var(--surface2)}
+.rec-thumb{width:52px;height:34px;border-radius:5px;background:#111;object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
+.rec-info{flex:1;min-width:0}
+.rec-name{font-size:.72rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-meta{font-size:.63rem;color:var(--text3);margin-top:2px;font-family:'Space Mono',monospace}
+.rec-dl{padding:5px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface2);font-size:.68rem;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:none;white-space:nowrap;transition:all .15s}
+.rec-dl:hover{background:var(--accent-dim);border-color:var(--accent-b)}
+.empty-recs{padding:24px;text-align:center;color:var(--text4);font-size:.75rem}
+
+/* ── PIPELINE ── */
+.pipe-step{display:flex;align-items:center;gap:8px;font-size:.68rem;color:var(--text3);transition:color .2s}
+.pipe-step.done{color:var(--green)}
+.pipe-step.active{color:var(--accent);font-weight:700}
+.pipe-step.error{color:var(--red)}
+.pipe-dot{font-size:.8rem;width:14px;text-align:center;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── TELEPROMPTER ── */
+.teleprompter-wrap{
+  display:none;gap:14px;flex:1;
+}
+.teleprompter-wrap.active{display:flex}
+.tp-preview-col{
+  display:flex;flex-direction:column;gap:10px;flex:1;
+}
+.tp-phone-frame{
+  position:relative;aspect-ratio:9/16;
+  /* Crece hasta llenar la altura disponible, anchura auto */
+  height:100%;max-height:600px;width:auto;
+  margin:0 auto;flex-shrink:0;
+  border-radius:var(--r);overflow:hidden;
+  border:1px solid var(--border);background:#000;
+  box-shadow:0 8px 32px rgba(0,0,0,.18);
+}
+.tp-iframe{width:100%;height:100%;border:none;display:block;}
+.tp-cam-overlay{
+  position:absolute;bottom:12px;right:12px;
+  width:90px;aspect-ratio:9/16;
+  border-radius:8px;overflow:hidden;
+  border:2px solid rgba(255,255,255,.3);
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+  background:#111;
+}
+.tp-cam-overlay video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+.tp-hint{
+  font-size:.65rem;color:var(--text3);text-align:center;
+  line-height:1.6;padding:8px 12px;
+  background:var(--accent-dim);border:1px solid var(--accent-b);
+  border-radius:var(--rs);
+}
+.tp-hint strong{color:var(--accent);font-weight:700;}
+.tp-controls-col{
+  display:flex;flex-direction:column;gap:10px;width:220px;flex-shrink:0;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="logo">🎬 Recording <em>Studio</em></span>
+    <div style="display:flex;align-items:center;gap:7px;padding:4px 12px;border-radius:20px;background:var(--red-dim);border:1px solid var(--red-b)" id="recIndicator" style="display:none">
+      <div class="rec-dot" id="recDot"></div>
+      <span class="rec-time" id="recTimer">00:00</span>
+    </div>
+  </div>
+  <div class="tb-right">
+    <div class="phone-status" id="phoneStatus">
+      <div class="phone-dot"></div>
+      <span>Móvil desconectado</span>
+    </div>
+    <a href="/" style="font-size:.73rem;font-weight:600;color:var(--text3);text-decoration:none;padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface2)">← Remotion</a>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ══ SIDEBAR IZQUIERDA — Fuentes ══ -->
+  <div class="sidebar">
+    <div class="s-head">Fuentes de vídeo</div>
+
+    <!-- Cámara PC -->
+    <div class="src-card active" id="cardPC" onclick="toggleSource('pc')">
+      <div class="src-header">
+        <span class="src-icon">💻</span>
+        <div class="src-info">
+          <div class="src-name">Cámara del PC</div>
+          <div class="src-sub" id="pcSubtitle">Webcam integrada</div>
+        </div>
+        <button class="src-toggle on" id="togglePC" onclick="event.stopPropagation();toggleSource('pc')"></button>
+      </div>
+      <div class="src-body">
+        <label style="font-size:.65rem;color:var(--text3);font-weight:600">Dispositivo</label>
+        <select class="src-select" id="camSelect" onchange="switchCamera()"></select>
+      </div>
+    </div>
+
+    <!-- Cámara Móvil -->
+    <div class="src-card" id="cardPhone" onclick="toggleSource('phone')">
+      <div class="src-header">
+        <span class="src-icon">📱</span>
+        <div class="src-info">
+          <div class="src-name">Cámara del móvil</div>
+          <div class="src-sub" id="phoneSubtitle">Escanea el QR para conectar</div>
+        </div>
+        <button class="src-toggle" id="togglePhone" onclick="event.stopPropagation();toggleSource('phone')"></button>
+      </div>
+      <div class="src-body">
+        <div style="font-size:.68rem;color:var(--text3)">Conecta tu móvil escaneando el código QR del panel derecho.</div>
+      </div>
+    </div>
+
+    <div class="s-head" style="margin-top:4px">Audio</div>
+
+    <!-- Micrófono PC -->
+    <div class="src-card active" id="cardMicPC" onclick="toggleSource('micpc')">
+      <div class="src-header">
+        <span class="src-icon">🎙️</span>
+        <div class="src-info">
+          <div class="src-name">Micrófono del PC</div>
+          <div class="src-sub">Micro integrado o externo</div>
+        </div>
+        <button class="src-toggle on" id="toggleMicPC" onclick="event.stopPropagation();toggleSource('micpc')"></button>
+      </div>
+      <div class="src-body">
+        <label style="font-size:.65rem;color:var(--text3);font-weight:600">Dispositivo</label>
+        <select class="src-select" id="micSelect" onchange="switchMic()"></select>
+      </div>
+    </div>
+
+    <!-- Micrófono Móvil -->
+    <div class="src-card" id="cardMicPhone" onclick="toggleSource('micphone')">
+      <div class="src-header">
+        <span class="src-icon">📳</span>
+        <div class="src-info">
+          <div class="src-name">Micrófono del móvil</div>
+          <div class="src-sub">Audio del teléfono vía WebRTC</div>
+        </div>
+        <button class="src-toggle" id="toggleMicPhone" onclick="event.stopPropagation();toggleSource('micphone')"></button>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+    <div style="padding:12px 14px;font-size:.63rem;color:var(--text4);border-top:1px solid var(--border);line-height:1.6">
+      Tip: puedes combinar cámara del PC + audio del móvil, o cámara del móvil + micro del PC.
+    </div>
+  </div>
+
+  <!-- ══ MAIN ══ -->
+  <div class="main">
+
+    <!-- Preview -->
+    <div class="preview-wrap" id="previewWrap">
+      <video id="previewMain" class="preview-main" autoplay muted playsinline></video>
+      <video id="previewPiP"  class="pip-video"   autoplay muted playsinline style="display:none"></video>
+      <div class="pip-wrap" id="pipWrap" style="display:none">
+        <video class="pip-video" id="pipVideo" autoplay muted playsinline></video>
+      </div>
+      <div class="preview-overlay">
+        <span class="preview-badge pb-pc" id="sourceBadge">PC CAM</span>
+      </div>
+      <div class="no-signal" id="noSignal">
+        <div class="no-signal-ico">📷</div>
+        <div>Activa una fuente de vídeo</div>
+      </div>
+    </div>
+
+    <!-- Audio meters -->
+    <div style="display:flex;flex-direction:column;gap:6px;padding:10px 14px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)">
+      <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text4);margin-bottom:4px">Niveles de audio</div>
+      <div class="meter-row">
+        <span class="meter-label">PC</span>
+        <div class="meter-bar"><div class="meter-fill" id="meterPC"></div></div>
+      </div>
+      <div class="meter-row">
+        <span class="meter-label">MOB</span>
+        <div class="meter-bar"><div class="meter-fill" id="meterPhone"></div></div>
+      </div>
+    </div>
+
+    <!-- Vista / modo -->
+    <div>
+      <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text4);margin-bottom:8px">Vista de grabación</div>
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tabPc"           onclick="setMode('pc')">💻 Solo PC</button>
+        <button class="mode-tab"        id="tabPhone"        onclick="setMode('phone')">📱 Solo Móvil</button>
+        <button class="mode-tab"        id="tabMix"          onclick="setMode('mix')">🎞️ PiP</button>
+        <button class="mode-tab"        id="tabTeleprompter" onclick="setMode('teleprompter')">🎬 Guión</button>
+      </div>
+    </div>
+
+    <!-- Modo Teleprompter -->
+    <div class="teleprompter-wrap" id="teleprompterWrap">
+
+      <!-- Columna izquierda: iframe vertical + cam overlay -->
+      <div class="tp-preview-col">
+        <div class="tp-phone-frame" id="tpFrame">
+          <!-- Remotion Studio en vertical — selecciona SplitReel antes de entrar aquí -->
+          <iframe class="tp-iframe" id="tpIframe"
+            src="http://localhost:3000"
+            allow="autoplay"
+            title="Remotion preview">
+          </iframe>
+          <!-- Cámara como PiP sobre el guión -->
+          <div class="tp-cam-overlay" id="tpCamOverlay">
+            <video id="tpCamVideo" autoplay muted playsinline></video>
+          </div>
+        </div>
+        <div class="tp-hint">
+          En Remotion Studio selecciona <strong>SplitReel</strong> y pulsa <strong>▶ Play</strong>.<br>
+          Mírate en el espejo pequeño mientras hablas — la grabación captura solo tu cámara.
+        </div>
+      </div>
+
+      <!-- Columna derecha: controles compactos -->
+      <div class="tp-controls-col">
+        <div class="controls">
+          <div class="ctrl-row">
+            <button class="btn btn-record" id="btnRecordTP" onclick="startRecording()" style="flex:1;justify-content:center">⏺ Grabar</button>
+          </div>
+          <div class="ctrl-row" style="gap:6px">
+            <button class="btn btn-pause" id="btnPauseTP"  onclick="pauseRecording()" disabled style="flex:1;justify-content:center">⏸</button>
+            <button class="btn btn-stop"  id="btnStopTP"   onclick="stopRecording()"  disabled style="flex:1;justify-content:center">⏹</button>
+          </div>
+        </div>
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text4);margin-top:4px">Niveles</div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)">
+          <div class="meter-row"><span class="meter-label">PC</span><div class="meter-bar"><div class="meter-fill" id="meterPCtp"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Controls (modo normal) -->
+    <div class="controls" id="normalControls">
+      <div class="ctrl-row">
+        <button class="btn btn-record" id="btnRecord" onclick="startRecording()">⏺ Grabar</button>
+        <button class="btn btn-pause"  id="btnPause"  onclick="pauseRecording()" disabled>⏸</button>
+        <button class="btn btn-stop"   id="btnStop"   onclick="stopRecording()"  disabled>⏹</button>
+      </div>
+      <div class="ctrl-row">
+        <button class="btn" id="btnProcess" onclick="stopAndProcess()" disabled
+          style="flex:1;justify-content:center;background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(78,128,238,.3)">
+          ⚡ Detener y procesar
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ SIDEBAR DERECHA — QR + grabaciones ══ -->
+  <div class="sidebar sidebar-r">
+
+    <div class="s-head">Conectar móvil</div>
+    <div class="qr-panel" id="qrPanel">
+      <img id="qrImg" class="qr-img" src="" alt="QR" style="display:none">
+      <div id="qrConnected" style="display:none">
+        <div style="font-size:2rem;margin-bottom:8px">✅</div>
+        <div class="qr-connected-msg">¡Móvil conectado!</div>
+        <div class="qr-label">El stream de la cámara<br>del teléfono está activo.</div>
+      </div>
+      <div id="qrLoading" class="qr-label">Cargando QR...</div>
+      <div class="qr-url" id="qrUrl"></div>
+    </div>
+
+    <div class="s-head" style="margin-top:4px">Pipeline</div>
+    <div id="pipelinePanel" style="margin:10px;display:none">
+      <!-- Estado general -->
+      <div id="pipelineStatus" style="
+        border-radius:var(--r);border:1.5px solid var(--border);
+        background:var(--surface2);overflow:hidden;
+      ">
+        <div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)">
+          <div id="pipelineSpinner" style="width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--accent);animation:spin .7s linear infinite;flex-shrink:0"></div>
+          <span id="pipelineStageLabel" style="font-size:.72rem;font-weight:700;color:var(--text)">Iniciando…</span>
+        </div>
+        <!-- Pasos -->
+        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:6px" id="pipelineSteps">
+          <div class="pipe-step" id="step-upload">
+            <span class="pipe-dot">○</span><span>Subir archivo</span>
+          </div>
+          <div class="pipe-step" id="step-plan">
+            <span class="pipe-dot">○</span><span>Generar edit plan</span>
+          </div>
+          <div class="pipe-step" id="step-render">
+            <span class="pipe-dot">○</span><span>Remotion render</span>
+          </div>
+        </div>
+      </div>
+      <!-- Log -->
+      <div id="pipelineLog" style="
+        margin-top:8px;padding:10px 12px;
+        background:#0A0A0A;border-radius:var(--rs);
+        font-size:.63rem;font-family:'Space Mono',monospace;
+        color:#aaa;max-height:160px;overflow-y:auto;
+        border:1px solid var(--border);
+        white-space:pre-wrap;word-break:break-word;
+      "></div>
+      <!-- Resultado final -->
+      <div id="pipelineResult" style="display:none;margin-top:8px;padding:12px 14px;background:var(--green-dim);border:1.5px solid var(--green-b);border-radius:var(--r)">
+        <div style="font-size:.72rem;font-weight:700;color:var(--green);margin-bottom:4px">✅ Vídeo listo</div>
+        <div id="pipelineResultPath" style="font-size:.6rem;font-family:'Space Mono',monospace;color:var(--text3);word-break:break-all"></div>
+      </div>
+      <!-- Error -->
+      <div id="pipelineError" style="display:none;margin-top:8px;padding:12px 14px;background:var(--red-dim);border:1.5px solid var(--red-b);border-radius:var(--r)">
+        <div style="font-size:.72rem;font-weight:700;color:var(--red);margin-bottom:4px">⚠️ Aviso</div>
+        <div id="pipelineErrorMsg" style="font-size:.63rem;font-family:'Space Mono',monospace;color:var(--text2);white-space:pre-wrap"></div>
+      </div>
+    </div>
+
+    <div class="s-head" style="margin-top:4px">Grabaciones</div>
+    <div class="rec-list" id="recList">
+      <div class="empty-recs">Sin grabaciones aún.<br>Pulsa ⏺ Grabar para empezar.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────
+const state = {
+  pcStream: null, phoneStream: null,
+  pcMicStream: null, phoneMicStream: null,
+  recorder: null, chunks: [],
+  recordingStart: null, timerInterval: null,
+  paused: false,
+  mode: 'pc',          // 'pc' | 'phone' | 'mix'
+  sources: { pc: true, phone: false, micpc: true, micphone: false },
+  phoneConnected: false,
+  recordings: [],
+};
+
+// ── SOCKET & WebRTC ───────────────────────────────────────────
+const socket = io({ query: { role: 'studio' } });
+let pc = null;
+
+function initPeerConnection() {
+  if (pc) { pc.close(); pc = null; }
+  pc = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+  });
+
+  pc.ontrack = (e) => {
+    const [stream] = e.streams;
+    state.phoneStream = stream;
+    updatePhoneConnected(true);
+    updatePreview();
+    startPhoneMeter(stream);
+  };
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) socket.emit('ice-candidate', e.candidate);
+  };
+}
+
+socket.on('mobile-ready', async () => {
+  initPeerConnection();
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit('offer', offer);
+});
+
+socket.on('answer', async (answer) => {
+  if (!pc) return;
+  await pc.setRemoteDescription(new RTCSessionDescription(answer));
+});
+
+socket.on('ice-candidate', async (candidate) => {
+  if (!pc) return;
+  try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+});
+
+socket.on('peer-left', ({ role }) => {
+  if (role === 'mobile') updatePhoneConnected(false);
+});
+
+socket.on('remote-cmd', ({ action }) => {
+  if (action === 'record' && document.getElementById('btnRecord').disabled === false) {
+    startRecording();
+    socket.emit('rec-state', { state: 'recording' });
+  } else if (action === 'pause') {
+    pauseRecording();
+    socket.emit('rec-state', { state: state.paused ? 'paused' : 'recording' });
+  } else if (action === 'stop' && document.getElementById('btnStop').disabled === false) {
+    stopRecording();
+    socket.emit('rec-state', { state: 'stopped' });
+  }
+});
+
+function updatePhoneConnected(connected) {
+  state.phoneConnected = connected;
+  const status = document.getElementById('phoneStatus');
+  const qrPanel = document.getElementById('qrPanel');
+  const qrConnected = document.getElementById('qrConnected');
+  const qrLoading = document.getElementById('qrLoading');
+  const qrImg = document.getElementById('qrImg');
+
+  if (connected) {
+    status.className = 'phone-status connected';
+    status.innerHTML = '<div class="phone-dot"></div><span>Móvil conectado</span>';
+    qrPanel.classList.add('connected');
+    qrConnected.style.display = 'block';
+    qrLoading.style.display   = 'none';
+    qrImg.style.display       = 'none';
+    document.getElementById('phoneSubtitle').textContent = 'Conectado ✓';
+    enablePhoneSource();
+  } else {
+    state.phoneStream = null;
+    status.className = 'phone-status';
+    status.innerHTML = '<div class="phone-dot"></div><span>Móvil desconectado</span>';
+    qrPanel.classList.remove('connected');
+    qrConnected.style.display = 'none';
+    qrImg.style.display       = 'block';
+    qrLoading.style.display   = 'none';
+    document.getElementById('phoneSubtitle').textContent = 'Escanea el QR para conectar';
+  }
+}
+
+function enablePhoneSource() {
+  const card = document.getElementById('cardPhone');
+  card.classList.add('active');
+  document.getElementById('togglePhone').classList.add('on');
+  state.sources.phone = true;
+  updatePreview();
+}
+
+// ── QR ────────────────────────────────────────────────────────
+async function loadQR() {
+  try {
+    const res  = await fetch('/api/qr');
+    const data = await res.json();
+    const img  = document.getElementById('qrImg');
+    img.src = data.qr;
+    img.style.display = 'block';
+    document.getElementById('qrUrl').textContent   = data.url;
+    document.getElementById('qrLoading').style.display = 'none';
+  } catch { document.getElementById('qrLoading').textContent = 'Error al generar QR'; }
+}
+
+// ── DEVICES ───────────────────────────────────────────────────
+async function enumerateDevices() {
+  await navigator.mediaDevices.getUserMedia({ video: true, audio: true }).catch(() => {});
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const camSel  = document.getElementById('camSelect');
+  const micSel  = document.getElementById('micSelect');
+  camSel.innerHTML = '';
+  micSel.innerHTML = '';
+
+  for (const d of devices) {
+    const opt = document.createElement('option');
+    opt.value = d.deviceId;
+    opt.textContent = d.label || `Dispositivo ${d.deviceId.slice(0, 6)}`;
+    if (d.kind === 'videoinput') camSel.appendChild(opt);
+    if (d.kind === 'audioinput') micSel.appendChild(opt);
+  }
+}
+
+async function startPC() {
+  const deviceId = document.getElementById('camSelect').value;
+  try {
+    if (state.pcStream) state.pcStream.getTracks().forEach(t => t.stop());
+    state.pcStream = await navigator.mediaDevices.getUserMedia({
+      video: deviceId ? { deviceId: { exact: deviceId } } : { width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false,
+    });
+    document.getElementById('pcSubtitle').textContent = 'Activa ✓';
+    updatePreview();
+    startPCMeter();
+  } catch (e) {
+    const msg = e.name === 'NotAllowedError'  ? 'Permiso denegado'
+              : e.name === 'NotFoundError'    ? 'No se encontró cámara'
+              : e.name === 'NotReadableError' ? 'Cámara en uso'
+              : 'Sin acceso';
+    document.getElementById('pcSubtitle').textContent = msg;
+    state.pcStream = null;
+    console.error('Camera error:', e.name, e.message);
+  }
+}
+
+async function startPCMic() {
+  const micId = document.getElementById('micSelect').value;
+  try {
+    if (state.pcMicStream) state.pcMicStream.getTracks().forEach(t => t.stop());
+    state.pcMicStream = await navigator.mediaDevices.getUserMedia({
+      audio: micId ? { deviceId: { exact: micId } } : true,
+      video: false
+    });
+    startPCMeter();
+  } catch (e) { console.error(e); }
+}
+
+async function switchCamera() { if (state.sources.pc) await startPC(); }
+async function switchMic()    { if (state.sources.micpc) await startPCMic(); }
+
+// ── AUDIO METERS ──────────────────────────────────────────────
+function startPCMeter() {
+  const stream = state.pcMicStream || (state.pcStream?.getAudioTracks().length ? state.pcStream : null);
+  if (!stream) return;
+  const ctx    = new AudioContext();
+  const src    = ctx.createMediaStreamSource(stream);
+  const anal   = ctx.createAnalyser();
+  anal.fftSize = 256;
+  src.connect(anal);
+  const data = new Uint8Array(anal.frequencyBinCount);
+  const tick = () => {
+    anal.getByteFrequencyData(data);
+    const rms = Math.sqrt(data.reduce((s, v) => s + v * v, 0) / data.length);
+    document.getElementById('meterPC').style.width = Math.min(100, rms * 2.2) + '%';
+    requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+function startPhoneMeter(stream) {
+  if (!stream || !stream.getAudioTracks().length) return;
+  const ctx  = new AudioContext();
+  const src  = ctx.createMediaStreamSource(stream);
+  const anal = ctx.createAnalyser();
+  anal.fftSize = 256;
+  src.connect(anal);
+  const data = new Uint8Array(anal.frequencyBinCount);
+  const tick = () => {
+    anal.getByteFrequencyData(data);
+    const rms = Math.sqrt(data.reduce((s, v) => s + v * v, 0) / data.length);
+    document.getElementById('meterPhone').style.width = Math.min(100, rms * 2.2) + '%';
+    requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+// ── TOGGLE SOURCES ────────────────────────────────────────────
+function toggleSource(src) {
+  state.sources[src] = !state.sources[src];
+  const ids = { pc: 'togglePC', phone: 'togglePhone', micpc: 'toggleMicPC', micphone: 'toggleMicPhone' };
+  const cardIds = { pc: 'cardPC', phone: 'cardPhone', micpc: 'cardMicPC', micphone: 'cardMicPhone' };
+  document.getElementById(ids[src]).classList.toggle('on', state.sources[src]);
+  document.getElementById(cardIds[src]).classList.toggle('active', state.sources[src]);
+
+  if (src === 'pc')      state.sources.pc      ? startPC()      : stopStream('pcStream');
+  if (src === 'micpc')   state.sources.micpc   ? startPCMic()   : stopStream('pcMicStream');
+  if (src === 'phone' && !state.phoneConnected) {
+    state.sources.phone = false;
+    document.getElementById('togglePhone').classList.remove('on');
+    document.getElementById('cardPhone').classList.remove('active');
+    alert('Primero conecta el móvil escaneando el código QR.');
+    return;
+  }
+  updatePreview();
+}
+
+function stopStream(key) {
+  if (state[key]) { state[key].getTracks().forEach(t => t.stop()); state[key] = null; }
+}
+
+// ── MODE & PREVIEW ────────────────────────────────────────────
+function setMode(mode) {
+  state.mode = mode;
+  const tabs = ['pc','phone','mix','teleprompter'];
+  tabs.forEach(m => {
+    const el = document.getElementById('tab' + m.charAt(0).toUpperCase() + m.slice(1));
+    if (el) el.classList.toggle('active', m === mode);
+  });
+
+  const isTP = mode === 'teleprompter';
+
+  // Elementos que se ocultan en modo teleprompter
+  document.getElementById('teleprompterWrap').classList.toggle('active', isTP);
+  document.getElementById('normalControls').style.display = isTP ? 'none' : 'flex';
+  document.getElementById('previewWrap').style.display    = isTP ? 'none' : 'block';
+
+  // Ocultar también el bloque de audio meters y el selector de modo
+  const meterBlock = document.getElementById('previewWrap').nextElementSibling;
+  if (meterBlock) meterBlock.style.display = isTP ? 'none' : 'flex';
+
+  if (isTP) {
+    // Sincronizar botones con estado de grabación actual
+    const recording = !!state.recorder;
+    document.getElementById('btnRecordTP').disabled = recording;
+    document.getElementById('btnPauseTP').disabled  = !recording;
+    document.getElementById('btnStopTP').disabled   = !recording;
+    // Conectar cámara al espejo PiP dentro del iframe
+    const tpCam = document.getElementById('tpCamVideo');
+    const stream = state.pcStream || state.phoneStream;
+    if (stream) playVideo(tpCam, stream);
+  }
+
+  updatePreview();
+}
+
+// Sincronizar meter del teleprompter con el metro del PC
+function syncTPMeter(pct) {
+  const el = document.getElementById('meterPCtp');
+  if (el) el.style.width = pct;
+}
+
+async function playVideo(el, stream) {
+  if (!el || !stream) return;
+  if (el.srcObject !== stream) el.srcObject = stream;
+  try { await el.play(); } catch (e) { console.warn('play():', e.name); }
+}
+
+function updatePreview() {
+  const main  = document.getElementById('previewMain');
+  const pipW  = document.getElementById('pipWrap');
+  const pipV  = document.getElementById('pipVideo');
+  const badge = document.getElementById('sourceBadge');
+  const noSig = document.getElementById('noSignal');
+
+  const hasPc    = !!state.pcStream    && state.sources.pc;
+  const hasPhone = !!state.phoneStream && state.sources.phone && state.phoneConnected;
+
+  if (state.mode === 'mix' && hasPc && hasPhone) {
+    playVideo(main, state.pcStream);
+    playVideo(pipV, state.phoneStream);
+    pipW.style.display = 'block';
+    badge.textContent  = 'MIX';
+    badge.className    = 'preview-badge pb-mix';
+  } else if (state.mode === 'phone' && hasPhone) {
+    playVideo(main, state.phoneStream);
+    pipW.style.display = 'none';
+    badge.textContent  = 'MÓVIL CAM';
+    badge.className    = 'preview-badge pb-phone';
+  } else if (hasPc) {
+    playVideo(main, state.pcStream);
+    pipW.style.display = 'none';
+    badge.textContent  = 'PC CAM';
+    badge.className    = 'preview-badge pb-pc';
+  } else if (hasPhone) {
+    playVideo(main, state.phoneStream);
+    pipW.style.display = 'none';
+    badge.textContent  = 'MÓVIL CAM';
+    badge.className    = 'preview-badge pb-phone';
+  } else {
+    main.srcObject = null;
+    pipW.style.display = 'none';
+  }
+
+  noSig.style.display = (hasPc || hasPhone) ? 'none' : 'flex';
+}
+
+// ── RECORDING ─────────────────────────────────────────────────
+function buildCompositeStream() {
+  // Canvas para mezclar PC + Phone si modo mix
+  if (state.mode === 'mix' && state.pcStream && state.phoneStream) {
+    const canvas = document.createElement('canvas');
+    canvas.width  = 1280; canvas.height = 720;
+    const ctx = canvas.getContext('2d');
+    const vPC    = document.createElement('video'); vPC.srcObject    = state.pcStream;    vPC.play();
+    const vPhone = document.createElement('video'); vPhone.srcObject = state.phoneStream; vPhone.play();
+    const draw = () => {
+      ctx.drawImage(vPC,    0,   0, 1280, 720);
+      ctx.drawImage(vPhone, 960, 540, 320, 180);
+      requestAnimationFrame(draw);
+    };
+    draw();
+    const canvasStream = canvas.captureStream(30);
+    addAudio(canvasStream);
+    return canvasStream;
+  }
+
+  const vid = state.mode === 'phone' ? state.phoneStream : state.pcStream;
+  if (!vid) return null;
+  const stream = new MediaStream([...vid.getVideoTracks()]);
+  addAudio(stream);
+  return stream;
+}
+
+function addAudio(stream) {
+  const mic = state.sources.micphone && state.phoneStream
+    ? state.phoneStream.getAudioTracks()
+    : (state.pcMicStream || state.pcStream)?.getAudioTracks() || [];
+  mic.forEach(t => stream.addTrack(t));
+}
+
+async function startRecording() {
+  const stream = buildCompositeStream();
+  if (!stream) { alert('Activa al menos una fuente de vídeo.'); return; }
+
+  const mimeType = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+    'video/mp4',
+  ].find(m => MediaRecorder.isTypeSupported(m)) || '';
+
+  state.chunks   = [];
+  state.recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+  state.recorder.ondataavailable = (e) => { if (e.data.size > 0) state.chunks.push(e.data); };
+  state.recorder.onstop = saveRecording;
+  state.recorder.start(100);
+
+  state.recordingStart = Date.now();
+  state.paused         = false;
+
+  // UI
+  document.getElementById('btnRecord').disabled  = true;
+  document.getElementById('btnPause').disabled   = false;
+  document.getElementById('btnStop').disabled    = false;
+  document.getElementById('btnProcess').disabled = false;
+  document.getElementById('recDot').classList.add('live');
+
+  state.timerInterval = setInterval(() => {
+    if (!state.paused) {
+      const s = Math.floor((Date.now() - state.recordingStart) / 1000);
+      document.getElementById('recTimer').textContent =
+        `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    }
+  }, 500);
+}
+
+function pauseRecording() {
+  if (!state.recorder) return;
+  if (state.paused) {
+    state.recorder.resume();
+    state.paused = false;
+    document.getElementById('btnPause').textContent = '⏸';
+    document.getElementById('recDot').classList.add('live');
+  } else {
+    state.recorder.pause();
+    state.paused = true;
+    document.getElementById('btnPause').textContent = '▶';
+    document.getElementById('recDot').classList.remove('live');
+  }
+}
+
+function stopRecording() {
+  if (!state.recorder) return;
+  state.recorder.stop();
+  clearInterval(state.timerInterval);
+  document.getElementById('recTimer').textContent = '00:00';
+  document.getElementById('recDot').classList.remove('live');
+  document.getElementById('btnRecord').disabled  = false;
+  document.getElementById('btnPause').disabled   = true;
+  document.getElementById('btnStop').disabled    = true;
+  document.getElementById('btnProcess').disabled = true;
+  document.getElementById('btnPause').textContent = '⏸';
+}
+
+function saveRecording(autoProcess = false) {
+  const blob = new Blob(state.chunks, { type: 'video/webm' });
+  const url  = URL.createObjectURL(blob);
+  const dur  = Math.floor((Date.now() - state.recordingStart) / 1000);
+  const name = `rec_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.webm`;
+  const mb   = (blob.size / 1024 / 1024).toFixed(1);
+  const id   = Date.now().toString();
+
+  state.recordings.unshift({ url, name, dur, mb, blob, id });
+  idbSave(id, blob).catch(console.error);
+  renderRecordings();
+
+  if (autoProcess) uploadAndProcess(blob, name);
+}
+
+function idbSave(key, blob) {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('recording-studio', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('recordings');
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction('recordings', 'readwrite');
+      tx.objectStore('recordings').put(blob, key);
+      tx.oncomplete = resolve;
+      tx.onerror    = reject;
+    };
+    req.onerror = reject;
+  });
+}
+
+function renderRecordings() {
+  const list = document.getElementById('recList');
+  if (!state.recordings.length) {
+    list.innerHTML = '<div class="empty-recs">Sin grabaciones aún.<br>Pulsa ⏺ Grabar para empezar.</div>';
+    return;
+  }
+  list.innerHTML = state.recordings.map((r, i) => `
+    <div class="rec-item">
+      <div style="width:52px;height:34px;border-radius:5px;background:#111;border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🎬</div>
+      <div class="rec-info">
+        <div class="rec-name">${r.name}</div>
+        <div class="rec-meta">${fmtDur(r.dur)} · ${r.mb} MB</div>
+      </div>
+      <a class="rec-dl" href="/editor.html?id=${r.id}" target="_blank" style="background:var(--accent-dim);border-color:var(--accent-b);color:var(--accent);margin-right:4px">✏️ Editar</a>
+      <a class="rec-dl" href="${r.url}" download="${r.name}">⬇ Descargar</a>
+    </div>
+  `).join('');
+}
+
+function fmtDur(s) {
+  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+
+// ── PIPELINE ──────────────────────────────────────────────────
+
+function stopAndProcess() {
+  if (!state.recorder) return;
+  // Sobreescribir onstop para que pase autoProcess=true
+  state.recorder.onstop = () => saveRecording(true);
+  stopRecording();
+}
+
+function pipelineLog(msg) {
+  const log = document.getElementById('pipelineLog');
+  log.textContent += msg + '\n';
+  log.scrollTop = log.scrollHeight;
+}
+
+function setStep(id, status) {
+  const el  = document.getElementById('step-' + id);
+  const dot = el.querySelector('.pipe-dot');
+  el.className = 'pipe-step ' + status;
+  dot.textContent = status === 'done' ? '✓' : status === 'error' ? '✗' : status === 'active' ? '▶' : '○';
+}
+
+function showPipelinePanel(label) {
+  document.getElementById('pipelinePanel').style.display = 'block';
+  document.getElementById('pipelineStageLabel').textContent = label;
+  document.getElementById('pipelineResult').style.display = 'none';
+  document.getElementById('pipelineError').style.display  = 'none';
+  document.getElementById('pipelineLog').textContent = '';
+  ['upload','whisper','plan','render'].forEach(s => setStep(s, 'pending'));
+}
+
+async function uploadAndProcess(blob, name) {
+  showPipelinePanel('Subiendo grabación…');
+  setStep('upload', 'active');
+
+  let filePath;
+  try {
+    const fd = new FormData();
+    fd.append('file', blob, name);
+    const res  = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    filePath = data.filePath;
+    pipelineLog(`Archivo guardado: ${data.name} (${(blob.size/1024/1024).toFixed(1)} MB)`);
+    setStep('upload', 'done');
+  } catch (e) {
+    setStep('upload', 'error');
+    pipelineLog('Error en upload: ' + e.message);
+    document.getElementById('pipelineSpinner').style.display = 'none';
+    return;
+  }
+
+  // Lanzar proceso en servidor — progreso llega por Socket.io
+  document.getElementById('pipelineStageLabel').textContent = 'Procesando…';
+  setStep('whisper', 'active');
+
+  await fetch('/api/process', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ filePath, name }),
+  });
+}
+
+// Eventos de proceso desde el servidor
+socket.on('process-event', ({ stage, message, output }) => {
+  pipelineLog(message);
+
+  if (stage === 'whisper-start') {
+    setStep('whisper', 'active');
+    document.getElementById('pipelineStageLabel').textContent = 'Transcribiendo…';
+  } else if (stage === 'whisper-done') {
+    setStep('whisper', 'done');
+    setStep('plan', 'active');
+  } else if (stage === 'whisper-error') {
+    setStep('whisper', 'error');
+    setStep('plan', 'active');
+    const errEl = document.getElementById('pipelineError');
+    errEl.style.display = 'block';
+    document.getElementById('pipelineErrorMsg').textContent = message;
+  } else if (stage === 'plan-ready') {
+    setStep('plan', 'done');
+    setStep('render', 'active');
+    document.getElementById('pipelineStageLabel').textContent = 'Renderizando…';
+  } else if (stage === 'render-start') {
+    setStep('render', 'active');
+  } else if (stage === 'render-done') {
+    setStep('render', 'done');
+    document.getElementById('pipelineStageLabel').textContent = '¡Listo!';
+    document.getElementById('pipelineSpinner').style.animation = 'none';
+    document.getElementById('pipelineSpinner').style.borderColor = 'var(--green)';
+    const res = document.getElementById('pipelineResult');
+    res.style.display = 'block';
+    document.getElementById('pipelineResultPath').textContent = output;
+  } else if (stage === 'render-error') {
+    setStep('render', 'error');
+    document.getElementById('pipelineStageLabel').textContent = 'Error en render';
+    const errEl = document.getElementById('pipelineError');
+    errEl.style.display = 'block';
+    document.getElementById('pipelineErrorMsg').textContent = message;
+  }
+});
+
+// ── INIT ──────────────────────────────────────────────────────
+async function init() {
+  // 1. Pedir permisos primero para que el navegador los recuerde
+  try {
+    const probe = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    probe.getTracks().forEach(t => t.stop());
+  } catch (e) {
+    console.warn('Permiso inicial:', e.name);
+  }
+
+  // 2. Enumerar dispositivos (ahora tendrán labels correctos)
+  await enumerateDevices();
+
+  // 3. Arrancar cámara y micro del PC
+  await Promise.all([ startPC(), startPCMic() ]);
+
+  // updatePreview ya se llama dentro de startPC
+  await loadQR();
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

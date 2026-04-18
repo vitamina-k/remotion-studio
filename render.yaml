@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: remotion-studio
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: npx remotion studio --ipv4 --port $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
