@@ -13,90 +13,192 @@ Tu trabajo es convertirlo en un vídeo con Remotion.
    - Datos / estadísticas → `DataStory`
    - Frases / citas / captions → `CaptionVideo`
    - Footage real + subtítulos + overlay → `FootageWithOverlay`
+   - Footage + DataStory panels en split horizontal → `HybridReel` ← **PRINCIPAL**
    - Frase de impacto animada → `TextReveal`
    - Comparativa dos columnas → `SplitScreen`
 4. Generar los props con el contenido extraído
 5. Actualizar `Root.tsx` con los nuevos defaultProps
-6. Confirmar al usuario que puede previsualizar en `npm run dev`
-7. Cuando el usuario apruebe: `npx remotion render <Composición> out/<nombre>.mp4 --input-props="src/data/<nombre>-props.json"`
+6. El usuario previsualiza en `npm run dev` → `localhost:3000`
+7. Render manual: `npx remotion render <Composición> out/<nombre>.mp4 --input-props="src/data/<nombre>-props.json"`
+
+---
 
 ## Composiciones disponibles
 
-### `DataStory`
-Escenas en secuencia con fondo dinámico y barra de progreso roja→amarilla→verde.
+### `HybridReel` ← COMPOSICIÓN PRINCIPAL (1080×1920)
+Footage real + paneles de datos en split horizontal animado.
 
-**Tipos de escena** (`type` en discriminatedUnion):
-- `title` — título grande + subtítulo opcional
-- `stat` — contador animado con etiqueta + sublabel
-- `quote` — cita con fuente
-- `comparison` — dos columnas con valores, color por partido/categoría, campo `color` opcional
-- `keyword` — palabras clave con highlight spotlight
-- `hook` — retenedor de audiencia: typewriter + glitch + badge pulsante
+**Modos de segmento:**
+- `split-bottom` — vídeo arriba (50%), panel de datos abajo (50%)
+- `split-top`    — panel arriba (50%), vídeo abajo (50%)
+- `stat-pop`     — vídeo pantalla completa + stat flotante con cristal esmerilado
 
-**Props de escena comunes:**
-- `bg?: 'gradient' | 'grid' | 'alert'` — background por escena
-- `durationFrames?: number` — duración en frames (default varía por tipo)
+**Tipos de panel** (`panel.type`):
+- `stat`     — número grande contando con tendencia ↑↓, subtext
+- `keyword`  — palabras con spotlight, highlight en accent color
+- `quote`    — cita elegante con comillas y fuente
+- `hook`     — typewriter en directo con cursor parpadeante
+- `list`     — puntos que aparecen uno a uno en fila
 
-**Props globales:**
-- `scenes`, `accentColor`, `background`, `theme?: 'dark'|'light'|'alert'`
+**Props principales:**
+```ts
+{
+  videoSrc: string,             // URL del webm/mp4
+  durationFrames: number,       // total frames (segundos × 30)
+  captions: [{word, start, end}], // palabras Whisper en segundos
+  showCaptions: boolean,        // default true
+  handle: string,               // default 'vitaminak.of'
+  ctaText: string,
+  ctaDurationFrames: number,
+  accentColor: string,          // default '#E63946'
+  segments: Segment[],
+}
+```
 
-### `FootageWithOverlay`
-Vídeo real (mp4/webm) con subtítulos sincronizados, efectos de foco y barra de progreso.
+**Comportamiento:**
+- Captions CapCut-style con bounce animation — se OCULTAN automáticamente cuando hay panel activo
+- Ken Burns sutil (scale 1→1.04 a lo largo del vídeo)
+- Vignette dinámica (se intensifica al hablar)
+- Círculo de progreso top-left: grande (R=44), número % dentro, glow, pulsa al 90%+
+- Handle top-right (vitaminak.of)
+- CTA rojo redondeado en los últimos `ctaDurationFrames` frames
+- Divider horizontal luminoso entre vídeo y panel durante split
 
-**Features:**
-- Subtítulos centrados (o top/bottom) con spotlight: la palabra activa escala, resalta y brilla
-- Palabras inactivas: opacity 0.25 + blur cuando hay palabra activa
-- Vignette dinámica: se intensifica al hablar (0.55 vs 0.25 opacity)
-- Overlay oscuro extra (rgba 0,0,0,0.28) solo al hablar
-- Barra de progreso roja→amarilla→verde con dot y porcentaje en movimiento
-- Lower third con slide-in/slide-out animado
+**Ejemplo de segmento:**
+```ts
+{ mode: 'split-bottom', startFrame: 230, endFrame: 420, panel: { type: 'stat', value: '609', label: 'asesores en Moncloa', trend: 'up' } }
+{ mode: 'stat-pop', startFrame: 870, endFrame: 1010, value: '+76%', label: 'más gasto en asesores', subtext: '40M€ → 71M€' }
+```
 
-**Props clave:**
-- `videoSrc` — URL del vídeo (relativa o http://localhost:3001/recordings/...)
-- `captions` — array `{word, start, end}` en segundos (de Whisper)
-- `captionPosition: 'center' | 'bottom' | 'top'` (default: 'center')
-- `showCaptions`, `lowerThird`, `theme`
-- `durationFrames` — total de frames del vídeo
+---
 
-### `TextReveal`
-Frase de impacto: palabras aparecen una a una con spring, última palabra en color acento.
+### `DataStory` (1080×1080)
+Escenas en secuencia con fondo dinámico.
 
-**Props:** `text`, `fontSize` (default 120), `theme?`, `durationFrames` (default 90)
+**Tipos de escena:** `hook`, `title`, `stat`, `quote`, `chart`, `keyword`, `comparison`
+**Props globales:** `scenes`, `accentColor`, `background`, `theme?: 'dark'|'light'|'alert'`
 
-### `SplitScreen`
-Comparativa dos columnas: izquierda con contador animado, derecha con texto.
+### `FootageWithOverlay` (1080×1920)
+Vídeo real con subtítulos CapCut, overlays reactivos (breaking/stat/warning/countdown), lower third.
 
-**Props:**
-- `left: { label, value, sublabel? }` — valor numérico animado, color auto-detectado por signo
-- `right: { text, subtext? }` — texto descriptivo
-- `theme?`, `durationFrames` (default 150)
+**Props clave:** `videoSrc`, `captions`, `captionPosition`, `handle`, `introDurationFrames`, `ctaDurationFrames`, `overlays`, `lowerThird`
 
-### `CaptionVideo`
-Palabras animadas con highlight, ventana deslizante de 5 palabras.
+**Overlay types:** `alert`, `warning`, `breaking`, `stat`, `chart-up`, `countdown`
+
+### `TextReveal` (1080×1080)
+Frase de impacto, palabras con spring una a una. Props: `text`, `fontSize`, `durationFrames`
+
+### `SplitScreen` (1080×1080)
+Dos columnas: contador animado izquierda + texto derecha. Props: `left`, `right`, `durationFrames`
+
+### `CaptionVideo` (1080×1080)
+Ventana deslizante de palabras con highlight.
+
+### `SplitReel` (1080×1920)
+DataStory arriba + vídeo abajo. Props: `scenes`, `videoSrc`, `videoDurationFrames`, `splitRatio`
+
+---
 
 ## Brand (`src/brand/brand.ts`)
 
 ```ts
-BRAND.colors: { black, white, red, yellow, green, accent, negative, positive, mono }
-BRAND.fonts:  { heading, mono }
-THEMES: { dark, light, alert } → { background, text, accent }
+BRAND.colors: { black:'#080808', white:'#F5F5F0', accent:'#E63946', positive:'#22C55E',
+                negative:'#E63946', yellow:'#FACC15', blue:'#3B82F6', red:'#E63946', green:'#22C55E' }
+BRAND.fonts:  { heading: 'Inter', mono: 'JetBrains Mono' }
+BRAND.fps: 30
+BRAND.width: 1080 | BRAND.height: 1080       ← cuadrado
+BRAND.widthVertical: 1080 | BRAND.heightVertical: 1920  ← Reels
 ```
 
-Formato por defecto: 1080×1080. Reels/vertical: 1080×1920.
+---
+
+## Pipeline de grabación
+
+### Iniciar todo (doble clic)
+```
+start.bat  →  node record-server.js (puerto 3001/3443)
+           →  npm run dev (Remotion Studio puerto 3000)
+           →  abre localhost:3000 y localhost:3001/studio.html
+```
+
+### Flujo completo
+1. `localhost:3001/studio.html` → activar cámara PC o conectar móvil por QR
+2. **📖 Guión** → teleprompter centrado sobre la cámara (texto 2.6rem, centrado vertically)
+   - Navegar escenas con ← → teclado
+   - El guión viene de `src/data/current-scenes.json` (formato: `{title, scenes:[{type, text, note, durationFrames}]}`)
+3. Grabar → subir → Whisper transcribe automáticamente
+4. Server guarda `src/data/<baseName>-props.json` con captions
+5. Abrir `localhost:3000` → **HybridReel** → cargar props → previsualizar
+
+### Preparar guión para nueva noticia
+1. Leer URL del artículo con WebFetch
+2. Extraer datos clave
+3. Escribir 5-6 escenas en lenguaje hablado (no formal)
+4. Guardar en `src/data/current-scenes.json`
+5. El teleprompter lo carga automáticamente al hacer F5 en studio.html
+
+### Actualizar HybridReel con nueva grabación
+1. Leer `src/data/<baseName>-props.json` generado por el server
+2. Calcular `durationFrames = Math.ceil(lastWordEnd * 30) + 60`
+3. Mapear timestamps Whisper a frames (segundos × 30) para alinear segmentos
+4. Actualizar `src/Root.tsx` → defaultProps del HybridReel
+5. TypeScript check → `npx tsc --noEmit`
+6. Push a GitHub → Render redespliega
+
+---
+
+## Archivos clave
+
+| Archivo | Función |
+|---------|---------|
+| `src/Root.tsx` | Registro de composiciones + defaultProps |
+| `src/compositions/HybridReel.tsx` | Composición principal |
+| `src/compositions/FootageWithOverlay.tsx` | Footage con overlays reactivos |
+| `src/compositions/DataStory.tsx` | Escenas de datos |
+| `src/data/current-scenes.json` | Guión activo del teleprompter |
+| `src/data/<name>-props.json` | Props generados por Whisper para cada grabación |
+| `record-server.js` | Servidor grabación (WebRTC + Whisper + props) |
+| `recording/studio.html` | Studio PC (cámara + teleprompter + pipeline) |
+| `recording/mobile.html` | App móvil (cámara + teleprompter táctil) |
+| `src/brand/brand.ts` | Colores, fuentes, dimensiones |
+| `start.bat` | Arranca todo de un doble clic |
+
+---
 
 ## Whisper / Transcripción
 
-- Servidor en `record-server.js` — graba desde móvil vía WebRTC
-- POST `/api/process` → Whisper (model small, lang es, word_timestamps) → JSON en `src/data/whisper_tmp/`
-- Captions se guardan en `src/data/<baseName>-edit-plan.json` y en props para render
+- POST `/api/process` → Whisper model `small`, lang `es`, `--word_timestamps True`
+- Output JSON en `src/data/whisper_tmp/<baseName>.json`
 - Whisper bin: `C:\Users\kevin\AppData\Local\Programs\Python\Python311\Scripts\whisper.exe`
-- FFmpeg bin: `C:\...\Gyan.FFmpeg...\ffmpeg-8.1-full_build\bin`
+- FFmpeg bin: `C:\...\Gyan.FFmpeg_Microsoft...\ffmpeg-8.1-full_build\bin`
+
+---
+
+## GitHub / Render
+
+- Repo: `https://github.com/vitamina-k/remotion-studio`
+- Deploy: Render.com free tier (Frankfurt), `npx remotion studio --ipv4 --port $PORT`
+- Token: classic PAT con scope `repo` — el usuario lo pega en `token.txt`, se usa y se borra
+- Push: `git push "https://vitamina-k:<TOKEN>@github.com/vitamina-k/remotion-studio.git" main`
+
+---
+
+## Pendiente para próximas sesiones
+
+- [ ] **Recorte de silencios** — FFmpeg detecta silencios y los corta antes de Whisper
+  - `ffmpeg -i input.webm -af silenceremove=...` o con `silencedetect` + script de corte
+  - Guardar timestamps de corte en edit-plan.json para sincronizar captions
+- [ ] **Render automático** — cuando el usuario apruebe en Studio, renderizar a MP4
+  - Solución Windows: spawn en proceso separado sin conflicto con `npm run dev`
+  - O botón manual en studio.html que llame a `npx remotion render` via API
+- [ ] **Vista previa en móvil** del resultado antes de publicar
+
+---
 
 ## Notas importantes
 
-- En Windows usar siempre `--input-props` con ruta a archivo JSON, nunca `--props` con JSON inline
-- Los props files se guardan en `src/data/`
-- La carpeta `out/` es para los MP4 renderizados
-- El record-server corre en puerto 3001 (HTTP) y 3443 (HTTPS para móvil con cámara)
-- Studio Remotion: `npm run dev` → http://localhost:3000
-- Iniciar servidores: `node record-server.js` en una terminal separada
+- En Windows usar siempre `--input-props` con ruta JSON, nunca JSON inline en CLI
+- El `record-server.js` NO renderiza automáticamente (conflicto con Studio en Windows)
+- Los vídeos `.webm` se sirven desde `localhost:3001/recordings/` — NO funcionan en Render
+- En Render.com el `videoSrc` debe estar vacío o ser una URL pública
+- `durationInFrames` en `<Composition>` y `durationFrames` en `defaultProps` deben coincidir
