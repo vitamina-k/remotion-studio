@@ -144,36 +144,25 @@ app.post('/api/process', express.json(), async (req, res) => {
   fs.writeFileSync(planPath, JSON.stringify(editPlan, null, 2));
   io.emit('process-event', { stage: 'plan-ready', message: `Edit plan guardado: ${planPath}` });
 
-  // 4. Render con Remotion
-  io.emit('process-event', { stage: 'render-start', message: 'Lanzando Remotion render...' });
-
+  // 4. Guardar props para FootageWithOverlay (sin render automático)
   const propsFile = path.join(dataDir, `${baseName}-props.json`);
+  const videoUrl  = `http://localhost:${HTTP_PORT}/recordings/${path.basename(filePath)}`;
   fs.writeFileSync(propsFile, JSON.stringify({
-    videoSrc:       `http://localhost:${HTTP_PORT}/recordings/${path.basename(filePath)}`,
-    durationFrames: 300,   // fallback; reemplazar con valor real si se conoce
+    videoSrc:        videoUrl,
+    durationFrames:  300,
     captions,
-    showCaptions:   captions.length > 0,
-    captionPosition: 'bottom',
-  }));
+    showCaptions:    captions.length > 0,
+    captionPosition: 'center',
+    handle:          '@vitamina_k',
+    ctaText:         'Sígueme para más →',
+    introDurationFrames: 0,
+    ctaDurationFrames:   50,
+  }, null, 2));
 
-  // Usar execFile con args array para evitar problemas de quoting en Windows
-  const npxBin = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-  const renderArgs = [
-    'remotion', 'render', 'FootageWithOverlay',
-    outputMp4,
-    `--props=${propsFile}`,
-  ];
-
-  execFile(npxBin, renderArgs, { cwd: __dirname, timeout: 600000 }, (err, _stdout, stderr) => {
-    if (err) {
-      io.emit('process-event', { stage: 'render-error', message: `Render falló: ${stderr || err.message}` });
-    } else {
-      io.emit('process-event', {
-        stage:   'render-done',
-        message: `Vídeo listo: ${outputMp4}`,
-        output:  outputMp4,
-      });
-    }
+  io.emit('process-event', {
+    stage:   'render-done',
+    message: `✅ Listo. Vídeo: ${path.basename(filePath)} · ${captions.length} palabras transcritas.\nAbre Remotion Studio → FootageWithOverlay para previsualizar.`,
+    output:  videoUrl,
   });
 });
 
