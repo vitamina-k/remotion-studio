@@ -93,6 +93,22 @@ body{
 .no-signal{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:.8rem;gap:8px}
 .no-signal-ico{font-size:2.5rem}
 
+/* ── TELEPROMPTER ON PREVIEW ── */
+.preview-tp{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(to top,rgba(0,0,0,.92) 0%,rgba(0,0,0,.65) 60%,transparent 100%);
+  padding:32px 20px 14px;
+  display:none;flex-direction:column;align-items:center;gap:6px;
+  pointer-events:none;
+}
+.preview-tp.visible{display:flex}
+.preview-tp-type{font-size:.55rem;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:rgba(255,255,255,.45)}
+.preview-tp-text{font-size:1rem;font-weight:800;color:#fff;text-align:center;line-height:1.4;letter-spacing:-.01em;max-width:90%}
+.preview-tp-nav{display:flex;align-items:center;gap:8px;margin-top:2px}
+.preview-tp-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s}
+.preview-tp-dot.active{background:#fff;width:14px;border-radius:3px}
+.preview-tp-toggle{position:absolute;bottom:10px;right:10px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:rgba(255,255,255,.7);font-size:.6rem;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);pointer-events:all;font-family:'Manrope',sans-serif;letter-spacing:.5px}
+
 /* ── AUDIO METER ── */
 .meter-row{display:flex;align-items:center;gap:10px;padding:0 2px}
 .meter-label{font-size:.63rem;font-weight:600;color:var(--text3);width:28px;text-align:right;font-family:'Space Mono',monospace}
@@ -304,6 +320,13 @@ body{
         <div class="no-signal-ico">📷</div>
         <div>Activa una fuente de vídeo</div>
       </div>
+      <!-- Teleprompter overlay sobre la cámara -->
+      <div class="preview-tp" id="previewTp">
+        <div class="preview-tp-type" id="previewTpType">▶ ESCENA 1</div>
+        <div class="preview-tp-text" id="previewTpText">Cargando guión…</div>
+        <div class="preview-tp-nav"  id="previewTpNav"></div>
+      </div>
+      <button class="preview-tp-toggle" id="tpToggleBtn" onclick="togglePreviewTp()">📖 Guión</button>
     </div>
 
     <!-- Audio meters -->
@@ -1059,7 +1082,29 @@ async function loadScenes() {
     const data = await res.json();
     tp.scenes  = data.scenes || [];
     renderSceneList();
+    renderPreviewTp();
   } catch { /* server not running — ignore */ }
+}
+
+let tpVisible = false;
+function togglePreviewTp() {
+  tpVisible = !tpVisible;
+  const overlay = document.getElementById('previewTp');
+  const btn     = document.getElementById('tpToggleBtn');
+  overlay.classList.toggle('visible', tpVisible);
+  btn.textContent = tpVisible ? '✖ Ocultar' : '📖 Guión';
+}
+
+function renderPreviewTp() {
+  const sc = tp.scenes[tp.current];
+  if (!sc || !tpVisible) return;
+  const icon = SCENE_ICONS[sc.type] || '▶';
+  const text = sc.content?.text || sc.content?.label || sc.content?.value || sc.type;
+  document.getElementById('previewTpType').textContent = `${icon} ESCENA ${tp.current + 1}/${tp.scenes.length}`;
+  document.getElementById('previewTpText').textContent = String(text).slice(0, 140);
+  document.getElementById('previewTpNav').innerHTML = tp.scenes.map((_, i) =>
+    `<div class="preview-tp-dot${i === tp.current ? ' active' : ''}"></div>`
+  ).join('');
 }
 
 function renderSceneList() {
@@ -1087,8 +1132,8 @@ function jumpScene(i) {
   tp.current = Math.max(0, Math.min(tp.scenes.length - 1, i));
   tp.elapsed = 0;
   renderSceneList();
+  renderPreviewTp();
   scrollToCurrent();
-  // Emite al móvil
   if (socket) socket.emit('remote-cmd', { action: 'scene', index: tp.current });
 }
 
@@ -1114,6 +1159,7 @@ function startSceneTicker() {
       tp.elapsed = 0;
       tp.current++;
       renderSceneList();
+      renderPreviewTp();
       scrollToCurrent();
       if (socket) socket.emit('remote-cmd', { action: 'scene', index: tp.current });
     }
