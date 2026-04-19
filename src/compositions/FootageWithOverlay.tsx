@@ -9,7 +9,8 @@ import {
 } from 'remotion';
 import { z } from 'zod';
 import { BRAND, THEMES, ThemeName } from '../brand/brand';
-import { getCaptionWindow, getWordState } from '../utils/captions';
+import { getCaptionWindow } from '../utils/captions';
+import { CaptionsStyled, captionPresets } from './CaptionsStyled';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,7 @@ export const footageWithOverlaySchema = z.object({
     .optional(),
   showCaptions: z.boolean().optional().default(true),
   captionPosition: z.enum(['bottom', 'top', 'center']).optional().default('center'),
+  captionPreset: z.enum(captionPresets).optional().default('hormozi'),
   background: z.string().optional().default(BRAND.colors.black),
   theme: z.enum(['dark', 'light', 'alert']).optional(),
   handle: z.string().optional().default('@handle'),
@@ -55,6 +57,8 @@ export const footageWithOverlaySchema = z.object({
   introDurationFrames: z.number().optional().default(45),
   ctaDurationFrames: z.number().optional().default(50),
   overlays: z.array(overlayEventSchema).optional(),
+  showTopBar: z.boolean().optional().default(false),
+  topBarColor: z.string().optional(),
 });
 
 type FootageWithOverlayProps = z.infer<typeof footageWithOverlaySchema>;
@@ -296,47 +300,8 @@ const LowerThird: React.FC<{
   );
 };
 
-// ─── Captions (estilo CapCut + Bounce) ───────────────────────────────────────
-
-const CaptionsOverlay: React.FC<{
-  captions: Array<{ word: string; start: number; end: number }>;
-  position: 'bottom' | 'top' | 'center';
-  frame: number; fps: number; hasActiveWord: boolean;
-}> = ({ captions, position, frame, fps, hasActiveWord }) => {
-  const currentTime = frame / fps;
-  const { visibleWords, windowStart, activeIndex, lastPassedIndex } = getCaptionWindow(captions, currentTime);
-  const positionStyle: React.CSSProperties =
-    position === 'center' ? { top: '50%', transform: 'translateY(-50%)' }
-    : position === 'bottom' ? { bottom: 120 } : { top: 120 };
-
-  return (
-    <div style={{ position: 'absolute', left: 0, right: 0, ...positionStyle, display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignContent: 'center', padding: '0 48px', gap: '0 14px', fontFamily: BRAND.fonts.heading }}>
-      {visibleWords.map((w, i) => {
-        const globalIndex = windowStart + i;
-        const { isActive, isPast } = getWordState(globalIndex, activeIndex, lastPassedIndex);
-        const entryFrame = Math.max(0, frame - Math.floor(w.start * fps));
-        const bounce = spring({ frame: entryFrame, fps, config: { damping: 7, stiffness: 260, mass: 0.65 }, durationInFrames: 18 });
-        const bounceScale   = 0.4 + bounce * 0.6;
-        const bounceOpacity = Math.min(1, bounce * 2.5);
-        const dimOpacity    = (hasActiveWord && !isActive ? 0.3 : isPast && !isActive ? 0.5 : 1) * bounceOpacity;
-        const blurAmount    = hasActiveWord && !isActive ? 1.2 : 0;
-        const activeScale   = isActive ? 1.08 : 1.0;
-        return (
-          <span key={`${globalIndex}-${w.word}`} style={{
-            fontSize: 68, fontWeight: 900, lineHeight: 1.35, letterSpacing: '-0.02em', display: 'inline-block',
-            opacity: dimOpacity, filter: blurAmount > 0 ? `blur(${blurAmount}px)` : 'none',
-            transform: `scale(${bounceScale * activeScale})`, transformOrigin: 'center bottom',
-            color: isActive ? '#000000' : BRAND.colors.white,
-            backgroundColor: isActive ? BRAND.colors.accent : 'transparent',
-            borderRadius: isActive ? 10 : 0,
-            padding: isActive ? '2px 16px' : '2px 0',
-            textShadow: isActive ? 'none' : '0 2px 20px rgba(0,0,0,0.98), 0 0 40px rgba(0,0,0,0.8)',
-          }}>{w.word}</span>
-        );
-      })}
-    </div>
-  );
-};
+// ─── Captions → CaptionsStyled (7 presets) ──────────────────────────────────
+// Replaced with CaptionsStyled (hormozi, bold, neon, box, outline, minimal, karaoke)
 
 // ─── Circular Progress ────────────────────────────────────────────────────────
 
@@ -389,6 +354,22 @@ const Watermark: React.FC<{ handle: string; frame: number; fps: number }> = ({ h
   );
 };
 
+// ─── Top Bar ──────────────────────────────────────────────────────────────────
+
+const TopBar: React.FC<{ frame: number; fps: number; color: string }> = ({ frame, fps, color }) => {
+  const scaleX = spring({ frame, fps, config: { damping: 20, stiffness: 120, mass: 0.8 }, durationInFrames: 25 });
+  return (
+    <div style={{
+      position: 'absolute', top: 0, left: 0, right: 0,
+      height: 6,
+      backgroundColor: color,
+      transformOrigin: 'left center',
+      transform: `scaleX(${scaleX})`,
+      boxShadow: `0 0 18px ${color}cc, 0 0 40px ${color}66`,
+    }} />
+  );
+};
+
 // ─── Intro Overlay ────────────────────────────────────────────────────────────
 
 const IntroOverlay: React.FC<{ title: string; frame: number; introDurationFrames: number; fps: number }> = ({ title, frame, introDurationFrames, fps }) => {
@@ -429,12 +410,14 @@ const CTAOverlay: React.FC<{ text: string; frame: number; durationFrames: number
 
 export const FootageWithOverlay: React.FC<FootageWithOverlayProps> = ({
   videoSrc, durationFrames, captions, lowerThird,
-  showCaptions = true, captionPosition = 'center',
+  showCaptions = true, captionPosition = 'center', captionPreset = 'hormozi',
   background = BRAND.colors.black, theme,
   handle = '@handle', introTitle,
   ctaText = 'Sígueme para más →',
   introDurationFrames = 45, ctaDurationFrames = 50,
   overlays = [],
+  showTopBar = false,
+  topBarColor,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -483,7 +466,16 @@ export const FootageWithOverlay: React.FC<FootageWithOverlayProps> = ({
       {/* ── Captions ── */}
       {showCaptions && captions && captions.length > 0 && (
         <>
-          <CaptionsOverlay captions={captions} position={captionPosition} frame={frame} fps={fps} hasActiveWord={hasActiveWord} />
+          <CaptionsStyled
+            words={captions}
+            preset={captionPreset}
+            accent={BRAND.colors.accent}
+            position={captionPosition}
+            maxWordsPerPhrase={4}
+            gapThreshold={0.38}
+            uppercase={captionPreset === 'bold' || captionPreset === 'outline'}
+            shadow={true}
+          />
           {captionPosition === 'center' && (
             <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, marginTop: 90, display: 'flex', justifyContent: 'center' }}>
               <SoundWave frame={frame} active={hasActiveWord} />
@@ -500,6 +492,9 @@ export const FootageWithOverlay: React.FC<FootageWithOverlayProps> = ({
 
       {/* ── Intro ── */}
       {introTitle && <IntroOverlay title={introTitle} frame={frame} introDurationFrames={introDurationFrames} fps={fps} />}
+
+      {/* ── Top Bar ── */}
+      {showTopBar && <TopBar frame={frame} fps={fps} color={topBarColor ?? BRAND.colors.accent} />}
 
     </AbsoluteFill>
   );
