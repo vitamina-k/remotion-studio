@@ -19,6 +19,7 @@ import {
 } from 'remotion';
 import { z } from 'zod';
 import { BRAND } from '../brand/brand';
+import { CaptionsStyled, captionPresets } from './CaptionsStyled';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SCHEMAS
@@ -89,6 +90,8 @@ export const hybridReelSchema = z.object({
   durationFrames: z.number().default(300),
   captions: z.array(captionWordSchema).optional().default([]),
   showCaptions: z.boolean().optional().default(true),
+  captionPreset: z.enum(captionPresets).optional().default('hormozi'),
+  captionPosition: z.enum(['top', 'center', 'bottom']).optional().default('center'),
   handle: z.string().optional().default('vitaminak.of'),
   ctaText: z.string().optional().default('Sígueme para más →'),
   ctaDurationFrames: z.number().optional().default(50),
@@ -380,48 +383,6 @@ function StatPopOverlay({ frame, fps, startFrame, endFrame, value, label, subtex
 // CAPTIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
-type CaptionWord = { word: string; start: number; end: number };
-
-function CaptionLine({ captions, frame, fps, accent }: { captions: CaptionWord[]; frame: number; fps: number; accent: string }) {
-  const currentTime = frame / fps;
-  const activeIdx = captions.findIndex(w => currentTime >= w.start && currentTime <= w.end);
-  const activeWord = activeIdx >= 0 ? captions[activeIdx] : null;
-  const visible = captions.filter(w => w.end >= currentTime - 0.3 && w.start <= currentTime + 6).slice(0, 10);
-  if (!visible.length) return null;
-
-  return (
-    <div style={{
-      position: 'absolute', top: '50%', left: 0, right: 0,
-      transform: 'translateY(-50%)',
-      display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '6px 8px',
-      padding: '0 36px', pointerEvents: 'none',
-    }}>
-      {visible.map((w, i) => {
-        const isActive = w === activeWord;
-        const bounceF = Math.max(0, frame - Math.floor(w.start * fps));
-        const bounce = spring({ frame: Math.min(bounceF, 20), fps, config: { damping: 7, stiffness: 260, mass: 0.65 } });
-        const bounceScale = isActive ? 0.6 + bounce * 0.4 : 1;
-        void i;
-        return (
-          <div key={`${w.word}-${w.start}`} style={{
-            fontSize: isActive ? 54 : 48,
-            fontWeight: 900,
-            color: isActive ? '#000' : 'rgba(255,255,255,0.62)',
-            backgroundColor: isActive ? accent : 'transparent',
-            borderRadius: isActive ? 10 : 0,
-            padding: isActive ? '4px 16px' : '4px 6px',
-            fontFamily: BRAND.fonts.heading, lineHeight: 1.2,
-            letterSpacing: '-0.02em',
-            transform: `scale(${bounceScale})`,
-            textShadow: isActive ? 'none' : '0 2px 14px rgba(0,0,0,0.9)',
-            filter: (!isActive && activeWord) ? 'blur(0.8px)' : 'none',
-            opacity: (!isActive && activeWord) ? 0.5 : 1,
-          }}>{w.word}</div>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CIRCULAR PROGRESS — grande y llamativo con número dentro
@@ -480,6 +441,8 @@ export const HybridReel: React.FC<HybridReelProps> = ({
   durationFrames,
   captions = [],
   showCaptions = true,
+  captionPreset = 'hormozi',
+  captionPosition = 'center',
   handle = 'vitaminak.of',
   ctaText = 'Sígueme para más →',
   ctaDurationFrames = 50,
@@ -588,7 +551,16 @@ export const HybridReel: React.FC<HybridReelProps> = ({
 
       {/* ── CAPTIONS — solo cuando NO hay panel split activo ──────────── */}
       {showCaptions && captions.length > 0 && !splitSeg && (
-        <CaptionLine captions={captions} frame={frame} fps={fps} accent={accentColor} />
+        <CaptionsStyled
+          words={captions}
+          preset={captionPreset}
+          accent={accentColor}
+          position={captionPosition}
+          maxWordsPerPhrase={4}
+          gapThreshold={0.38}
+          uppercase={captionPreset === 'bold' || captionPreset === 'outline'}
+          shadow={true}
+        />
       )}
 
       {/* ── CIRCULAR PROGRESS ─────────────────────────────────────────── */}

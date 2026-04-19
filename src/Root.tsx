@@ -10,6 +10,7 @@ import { SplitReel, splitReelSchema, splitReelTotalFrames } from "./compositions
 import { TextReveal, textRevealSchema } from "./compositions/TextReveal";
 import { SplitScreen, splitScreenSchema } from "./compositions/SplitScreen";
 import { HybridReel, hybridReelSchema } from "./compositions/HybridReel";
+import { CaptionsStyled, captionsStyledSchema, demoWords } from "./compositions/CaptionsStyled";
 import { BRAND } from "./brand/brand";
 
 // ─── Sánchez 609 asesores — TheObjective 18 abril 2026 ───────────────────────
@@ -318,6 +319,7 @@ export const RemotionRoot: React.FC = () => {
             { type: 'warning',  startFrame: 360, endFrame: 450, text: 'SIN TRANSPARENCIA' },
             { type: 'countdown', startFrame: 430, endFrame: 500 },
           ],
+          showTopBar: false,
         }}
       />
 
@@ -338,6 +340,11 @@ export const RemotionRoot: React.FC = () => {
           showCaptions: false,
           captionPosition: 'bottom' as const,
           captions: [],
+          transitionFrames: 20,
+          bridgeStat: {
+            value: '-62%',
+            label: '228 días trabajando para el Estado',
+          },
           lowerThird: {
             name: 'Kevin García',
             title: 'Liberación Fiscal 2025',
@@ -552,6 +559,8 @@ export const RemotionRoot: React.FC = () => {
             {"word":"televiario.","start":48.42,"end":48.96},
           ],
           showCaptions: true,
+          captionPreset: 'hormozi' as const,
+          captionPosition: 'center' as const,
           handle: 'vitaminak.of',
           ctaText: 'Sígueme para más →',
           ctaDurationFrames: 80,
@@ -616,6 +625,30 @@ export const RemotionRoot: React.FC = () => {
           ],
         }}
       />
+
+      {/* ── CaptionsStyled — 7 presets en composiciones separadas para previsualizar ── */}
+      {(['hormozi','bold','neon','box','outline','minimal','karaoke'] as const).map((preset) => (
+        <Composition
+          key={preset}
+          id={`Captions_${preset}`}
+          component={CaptionsStyled}
+          durationInFrames={240}
+          fps={BRAND.fps}
+          width={BRAND.widthVertical}
+          height={BRAND.heightVertical}
+          schema={captionsStyledSchema}
+          defaultProps={{
+            words: demoWords,
+            preset,
+            accent: '#E63946',
+            position: 'center' as const,
+            maxWordsPerPhrase: 4,
+            gapThreshold: 0.38,
+            uppercase: preset === 'bold' || preset === 'outline',
+            shadow: true,
+          }}
+        />
+      ))}
     </>
   );
 };
