@@ -123,6 +123,9 @@ function useSplitAmt(frame: number, fps: number, startFrame: number, endFrame: n
   return Math.max(0, Math.min(1, enter - exit));
 }
 
+// Ratio vídeo/panel: 58% vídeo, 42% panel
+const SPLIT_RATIO = 0.58;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PANEL COMPONENTS  (cada uno renderiza en 1080 × 960 — mitad inferior/superior)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -461,8 +464,8 @@ export const HybridReel: React.FC<HybridReelProps> = ({
   const splitAmt = splitSeg ? useSplitAmt(frame, fps, splitSeg.startFrame, splitSeg.endFrame) : 0;
   const isPanelBottom = splitSeg?.mode === 'split-bottom'; // vídeo arriba, panel abajo
 
-  // Altura del bloque de vídeo (px): 100% → 50% durante split
-  const videoHeightPct = interpolate(splitAmt, [0, 1], [100, 50]);
+  // Altura del bloque de vídeo (px): 100% → 58% durante split (ratio asimétrico)
+  const videoHeightPct = interpolate(splitAmt, [0, 1], [100, SPLIT_RATIO * 100]);
   const videoHeightPx = (videoHeightPct / 100) * height;
   const panelHeightPx = height - videoHeightPx;
 
@@ -518,23 +521,39 @@ export const HybridReel: React.FC<HybridReelProps> = ({
       </div>
 
       {/* ── BLOQUE PANEL ──────────────────────────────────────────────── */}
-      {splitSeg && panelHeightPx > 0 && (
-        <div style={{
-          position: 'absolute',
-          left: 0, right: 0,
-          top: isPanelBottom ? videoHeightPx : 0,
-          height: panelHeightPx,
-          background: '#0A0A0A',
-          overflow: 'hidden',
-        }}>
-          <PanelContent
-            content={splitSeg.panel}
-            frame={Math.max(0, frame - splitSeg.startFrame)}
-            fps={fps}
-            accent={accentColor}
-          />
-        </div>
-      )}
+      {splitSeg && panelHeightPx > 0 && (() => {
+        const slideDir = isPanelBottom ? 1 : -1;
+        const slideOffset = interpolate(splitAmt, [0, 1], [panelHeightPx * slideDir, 0]);
+        return (
+          <div style={{
+            position: 'absolute',
+            left: 0, right: 0,
+            top: isPanelBottom ? videoHeightPx : 0,
+            height: panelHeightPx,
+            background: 'linear-gradient(180deg, rgba(10,10,12,0.97) 0%, rgba(6,6,8,0.99) 100%)',
+            backdropFilter: 'blur(24px)',
+            borderTop: isPanelBottom ? `1px solid rgba(255,255,255,0.06)` : 'none',
+            borderBottom: !isPanelBottom ? `1px solid rgba(255,255,255,0.06)` : 'none',
+            overflow: 'hidden',
+            transform: `translateY(${slideOffset}px)`,
+          }}>
+            {/* Ruido sutil */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")',
+              backgroundSize: '180px',
+              opacity: 0.025,
+              mixBlendMode: 'overlay',
+            }} />
+            <PanelContent
+              content={splitSeg.panel}
+              frame={Math.max(0, frame - splitSeg.startFrame)}
+              fps={fps}
+              accent={accentColor}
+            />
+          </div>
+        );
+      })()}
 
       {/* ── DIVIDER HORIZONTAL ────────────────────────────────────────── */}
       {splitSeg && <SplitDivider splitAmt={splitAmt} accent={accentColor} width={width} />}
@@ -568,30 +587,49 @@ export const HybridReel: React.FC<HybridReelProps> = ({
 
       {/* ── HANDLE ────────────────────────────────────────────────────── */}
       <div style={{
-        position: 'absolute', top: 42, right: 32,
-        fontSize: 24, fontWeight: 800,
-        color: 'rgba(255,255,255,0.7)',
-        fontFamily: BRAND.fonts.heading, letterSpacing: '-0.01em',
+        position: 'absolute', top: 38, right: 28,
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'rgba(0,0,0,0.52)',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        borderRadius: 40,
+        padding: '8px 18px 8px 14px',
         transform: `scale(${wmS})`,
-        textShadow: '0 2px 14px rgba(0,0,0,0.85)',
-      }}>{handle}</div>
+        transformOrigin: 'top right',
+      }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%',
+          backgroundColor: accentColor,
+          boxShadow: `0 0 8px ${accentColor}`,
+        }} />
+        <div style={{
+          fontSize: 22, fontWeight: 800,
+          color: 'rgba(255,255,255,0.88)',
+          fontFamily: BRAND.fonts.heading, letterSpacing: '-0.01em',
+        }}>{handle}</div>
+      </div>
 
       {/* ── CTA ───────────────────────────────────────────────────────── */}
-      {showCta && (
-        <div style={{
-          position: 'absolute', bottom: 70, left: 0, right: 0,
-          display: 'flex', justifyContent: 'center',
-          transform: `scale(${ctaS}) translateY(${interpolate(ctaS, [0, 1], [20, 0])}px)`,
-          opacity: ctaS,
-        }}>
+      {showCta && (() => {
+        const ctaLocalFrame = Math.max(0, frame - ctaStart);
+        const pulse = 1 + Math.sin((ctaLocalFrame / fps) * Math.PI * 2.2) * 0.028;
+        const glowPulse = 0.55 + Math.sin((ctaLocalFrame / fps) * Math.PI * 2.2) * 0.15;
+        return (
           <div style={{
-            backgroundColor: accentColor, color: '#fff',
-            fontSize: 30, fontWeight: 800, fontFamily: BRAND.fonts.heading,
-            padding: '18px 48px', borderRadius: 50, letterSpacing: '-0.01em',
-            boxShadow: `0 8px 48px rgba(${hexToRgb(accentColor)},0.6), 0 2px 8px rgba(0,0,0,0.4)`,
-          }}>{ctaText}</div>
-        </div>
-      )}
+            position: 'absolute', bottom: 70, left: 0, right: 0,
+            display: 'flex', justifyContent: 'center',
+            transform: `scale(${ctaS * pulse}) translateY(${interpolate(ctaS, [0, 1], [20, 0])}px)`,
+            opacity: ctaS,
+          }}>
+            <div style={{
+              backgroundColor: accentColor, color: '#fff',
+              fontSize: 30, fontWeight: 800, fontFamily: BRAND.fonts.heading,
+              padding: '18px 48px', borderRadius: 50, letterSpacing: '-0.01em',
+              boxShadow: `0 8px 48px rgba(${hexToRgb(accentColor)},${glowPulse}), 0 2px 8px rgba(0,0,0,0.4)`,
+            }}>{ctaText}</div>
+          </div>
+        );
+      })()}
 
     </AbsoluteFill>
   );
