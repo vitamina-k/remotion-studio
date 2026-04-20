@@ -630,7 +630,7 @@ export const RemotionRoot: React.FC = () => {
       {(['hormozi','bold','neon','box','outline','minimal','karaoke'] as const).map((preset) => (
         <Composition
           key={preset}
-          id={`Captions_${preset}`}
+          id={`Captions-${preset}`}
           component={CaptionsStyled}
           durationInFrames={240}
           fps={BRAND.fps}
