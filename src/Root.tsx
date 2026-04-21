@@ -13,6 +13,133 @@ import { HybridReel, hybridReelSchema } from "./compositions/HybridReel";
 import { CaptionsStyled, captionsStyledSchema, demoWords } from "./compositions/CaptionsStyled";
 import { BRAND } from "./brand/brand";
 
+// ─── Alvise tenía razón — Los medios mintieron (2020 vs 2026) ────────────────
+
+const alviseMediaScenes: React.ComponentProps<typeof DataStory>['scenes'] = [
+  {
+    type: 'hook',
+    durationFrames: 210,
+    bg: 'alert' as const,
+    content: {
+      text: 'El Plural, 2020:\n"El enésimo bulo\nde Alvise Pérez"',
+      subtext: 'Así protegían al poder. Así funcionaba el sistema.',
+    },
+  },
+  {
+    type: 'keyword',
+    durationFrames: 160,
+    bg: 'grid' as const,
+    content: {
+      text: 'Acusaron a Alvise de mentir sobre Zapatero. Lo convirtieron en el bulero por defecto de España.',
+      highlight: 'bulero por defecto',
+    },
+  },
+  {
+    type: 'title',
+    durationFrames: 180,
+    bg: 'alert' as const,
+    content: {
+      text: '6 años después.\nThe Objective, 2026.',
+      subtext: 'Lo que los medios nunca quisieron investigar.',
+      direction: 'up' as const,
+      highlightWords: ['2026'],
+    },
+  },
+  {
+    type: 'stat',
+    durationFrames: 130,
+    content: {
+      value: '458.000€',
+      label: 'cobró el testaferro de Zapatero de Plus Ultra',
+      trend: 'up' as const,
+    },
+  },
+  {
+    type: 'stat',
+    durationFrames: 130,
+    content: {
+      value: '53M€',
+      label: 'rescate público que el Gobierno dio a Plus Ultra',
+      trend: 'down' as const,
+    },
+  },
+  {
+    type: 'keyword',
+    durationFrames: 180,
+    bg: 'alert' as const,
+    content: {
+      text: 'No mintió Alvise. Mintieron los que le llamaron mentiroso. ¿Dónde está la rectificación?',
+      highlight: 'Mintieron los que le llamaron mentiroso',
+    },
+  },
+  {
+    type: 'quote',
+    durationFrames: 180,
+    content: {
+      text: '"El enésimo bulo de Alvise Pérez."\nEl Plural · 2020',
+      subtext: 'Confirmado por The Objective en 2026. Alvise tenía razón.',
+    },
+  },
+];
+
+// ─── SALF Andalucía — Eje 04: Seguridad ciudadana e inmigración ──────────────
+
+const salfEje04Scenes: React.ComponentProps<typeof DataStory>['scenes'] = [
+  {
+    type: 'hook',
+    durationFrames: 210,
+    bg: 'alert' as const,
+    content: {
+      text: 'Eje 04\nSeguridad e Inmigración',
+      subtext: 'SALF Andalucía 2026 · Ley, orden y prioridad para el ciudadano honrado',
+    },
+  },
+  {
+    type: 'stat',
+    durationFrames: 120,
+    content: {
+      value: '10.000',
+      label: 'chalecos antibalas para Policía Nacional y Guardia Civil',
+      trend: 'up' as const,
+    },
+  },
+  {
+    type: 'comparison',
+    durationFrames: 160,
+    content: {
+      title: 'Dietas policiales — sin actualizar desde 2002',
+      left:  { label: 'Hoy (desde 2002)', value: '48,92€', sublabel: 'alojamiento · 28,21€ manutención', color: '#E63946' },
+      right: { label: 'Con SALF',         value: '84,38€', sublabel: 'alojamiento · 48,66€ manutención', color: '#22C55E' },
+    },
+  },
+  {
+    type: 'keyword',
+    durationFrames: 180,
+    bg: 'grid' as const,
+    content: {
+      text: 'Las ayudas autonómicas van primero para españoles y residentes legales. Fin a los agravios comparativos.',
+      highlight: 'españoles y residentes legales',
+    },
+  },
+  {
+    type: 'keyword',
+    durationFrames: 180,
+    bg: 'alert' as const,
+    content: {
+      text: 'En Andalucía el delincuente tendrá miedo, no el ciudadano honrado.',
+      highlight: 'el delincuente tendrá miedo',
+    },
+  },
+  {
+    type: 'quote',
+    durationFrames: 180,
+    content: {
+      text: '"El mayor plan de deportación\nde la historia de España."',
+      subtext: 'SALF Andalucía · Contrato Electoral 2026',
+    },
+  },
+];
+
 // ─── Sánchez 609 asesores — TheObjective 18 abril 2026 ───────────────────────
 
 const sanchez609Scenes: React.ComponentProps<typeof DataStory>['scenes'] = [
@@ -209,8 +336,9 @@ const alviseSALFScenes: React.ComponentProps<typeof DataStory>['scenes'] = [
   },
 ];
 
-void alviseSALFScenes; // archivo histórico
-void video1Captions;   // captions históricas
+void alviseSALFScenes;  // archivo histórico
+void video1Captions;    // captions históricas
+void sanchez609Scenes;  // archivo histórico
 
 // ─── Composiciones ────────────────────────────────────────────────────────────
 
@@ -272,16 +400,32 @@ export const RemotionRoot: React.FC = () => {
         }}
       />
 
+      {/* ── Alvise tenía razón — paralelismo 2020 vs 2026 ── */}
+      <Composition
+        id="AlviseVsMedia"
+        component={DataStory}
+        durationInFrames={totalFrames(alviseMediaScenes)}
+        fps={BRAND.fps}
+        width={BRAND.widthVertical}
+        height={BRAND.heightVertical}
+        schema={dataStorySchema}
+        defaultProps={{
+          scenes: alviseMediaScenes,
+          background: '#080808',
+          accentColor: '#E63946',
+        }}
+      />
+
       <Composition
         id="DataStory"
         component={DataStory}
-        durationInFrames={totalFrames(sanchez609Scenes)}
+        durationInFrames={totalFrames(salfEje04Scenes)}
         fps={BRAND.fps}
         width={BRAND.width}
         height={BRAND.height}
         schema={dataStorySchema}
         defaultProps={{
-          scenes: sanchez609Scenes,
+          scenes: salfEje04Scenes,
           background: "#080808",
           accentColor: "#E63946",
         }}
@@ -484,143 +628,363 @@ export const RemotionRoot: React.FC = () => {
         }}
       />
 
-      {/* ─── HybridReel: footage + DataStory panels — formato vertical 1080×1920 ─── */}
+      {/* ─── HybridReel — Alvise tenía razón (rec_2026-04-20-09-51-17, 78.96s) ─── */}
       <Composition
-        id="HybridReel"
+        id="HybridReel-Alvise"
         component={HybridReel}
-        durationInFrames={1470}
+        durationInFrames={2430}
         fps={BRAND.fps}
         width={BRAND.widthVertical}
         height={BRAND.heightVertical}
         schema={hybridReelSchema}
         defaultProps={{
-          videoSrc: 'http://localhost:3001/recordings/rec_2026-04-18-19-44-49.webm',
-          durationFrames: 1470,
-          captions: [
-            {"word":"¿Sabes","start":0,"end":1},{"word":"cuántos","start":1,"end":1.34},
-            {"word":"asesores","start":1.34,"end":1.74},{"word":"tiene","start":1.74,"end":1.94},
-            {"word":"Sánchez","start":1.94,"end":2.2},{"word":"en","start":2.2,"end":2.38},
-            {"word":"Moncloa?","start":2.38,"end":2.76},{"word":"Pues","start":3.16,"end":3.26},
-            {"word":"más","start":3.26,"end":3.46},{"word":"que","start":3.46,"end":3.62},
-            {"word":"nunca,","start":3.62,"end":3.84},{"word":"más","start":4.04,"end":4.18},
-            {"word":"que","start":4.18,"end":4.36},{"word":"nadie,","start":4.36,"end":4.58},
-            {"word":"nadie","start":4.7,"end":4.84},{"word":"sabe","start":4.84,"end":5.04},
-            {"word":"exactamente","start":5.04,"end":5.32},{"word":"cuánto","start":5.32,"end":5.98},
-            {"word":"cobran,","start":5.98,"end":6.5},{"word":"pero","start":6.68,"end":6.82},
-            {"word":"que","start":6.82,"end":6.92},{"word":"eso","start":6.92,"end":7.02},
-            {"word":"no","start":7.02,"end":7.12},{"word":"lo","start":7.12,"end":7.2},
-            {"word":"sabías.","start":7.2,"end":7.46},{"word":"609","start":8.1,"end":8.62},
-            {"word":"asesores","start":8.62,"end":9.04},{"word":"solo","start":9.04,"end":9.42},
-            {"word":"en","start":9.42,"end":9.78},{"word":"presidencia","start":9.78,"end":10.42},
-            {"word":"es","start":10.42,"end":10.8},{"word":"el","start":10.8,"end":10.92},
-            {"word":"máximo","start":10.92,"end":11.1},{"word":"histórico","start":11.1,"end":11.52},
-            {"word":"y","start":11.52,"end":11.66},{"word":"en","start":11.66,"end":11.72},
-            {"word":"todo","start":11.72,"end":11.82},{"word":"el","start":11.82,"end":11.94},
-            {"word":"gobierno","start":11.94,"end":12.12},{"word":"suman","start":12.12,"end":12.5},
-            {"word":"1","start":12.5,"end":12.66},{"word":".264.","start":12.66,"end":13.9},
-            {"word":"El","start":14.4,"end":14.76},{"word":"63","start":14.76,"end":15.08},
-            {"word":"%","start":15.08,"end":15.7},{"word":"están","start":15.7,"end":16.26},
-            {"word":"en","start":16.26,"end":16.4},{"word":"los","start":16.4,"end":16.48},
-            {"word":"rangos","start":16.48,"end":16.74},{"word":"más","start":16.74,"end":16.9},
-            {"word":"altos,","start":16.9,"end":17.28},{"word":"453","start":17.64,"end":18.74},
-            {"word":"en","start":18.74,"end":18.88},{"word":"el","start":18.88,"end":18.96},
-            {"word":"nivel","start":18.96,"end":19.12},{"word":"30,","start":19.12,"end":19.54},
-            {"word":"el","start":19.74,"end":19.94},{"word":"máximo","start":19.94,"end":20.24},
-            {"word":"sin","start":20.24,"end":20.54},{"word":"oposición,","start":20.54,"end":21.06},
-            {"word":"sin","start":21.24,"end":21.44},{"word":"concurso","start":21.44,"end":21.9},
-            {"word":"público.","start":21.9,"end":22.28},{"word":"En","start":23.02,"end":23.28},
-            {"word":"2018","start":23.28,"end":23.62},{"word":"el","start":23.62,"end":23.9},
-            {"word":"gobierno","start":23.9,"end":24.1},{"word":"gastaba","start":24.1,"end":24.48},
-            {"word":"40","start":24.48,"end":24.9},{"word":"millones","start":24.9,"end":25.36},
-            {"word":"en","start":25.36,"end":25.66},{"word":"asesores","start":25.66,"end":26.08},
-            {"word":"y","start":26.08,"end":26.56},{"word":"en","start":26.56,"end":26.7},
-            {"word":"2025","start":26.7,"end":27.08},{"word":"71","start":27.08,"end":28.3},
-            {"word":"millones,","start":28.3,"end":28.56},{"word":"un","start":29.22,"end":29.5},
-            {"word":"aumento","start":29.5,"end":29.72},{"word":"del","start":29.72,"end":29.96},
-            {"word":"76","start":29.96,"end":31.06},{"word":"%","start":31.06,"end":31.48},
-            {"word":"en","start":31.48,"end":31.88},{"word":"solo","start":31.88,"end":32.1},
-            {"word":"7","start":32.1,"end":32.44},{"word":"años.","start":32.44,"end":32.84},
-            {"word":"Y","start":33.34,"end":33.58},{"word":"todo","start":33.58,"end":33.78},
-            {"word":"esto","start":33.78,"end":34.12},{"word":"mientras","start":34.12,"end":34.54},
-            {"word":"la","start":34.54,"end":35.76},{"word":"legislatura","start":35.76,"end":36.38},
-            {"word":"está","start":36.38,"end":36.82},{"word":"encallada,","start":36.82,"end":37.46},
-            {"word":"sin","start":37.96,"end":38.08},{"word":"presupuestos,","start":38.08,"end":38.74},
-            {"word":"sin","start":39,"end":39.12},{"word":"mayoría,","start":39.12,"end":39.46},
-            {"word":"sin","start":40.06,"end":40.2},{"word":"más","start":40.2,"end":40.64},
-            {"word":"asesores","start":40.64,"end":41.08},{"word":"y","start":41.08,"end":41.58},
-            {"word":"además","start":41.58,"end":41.76},{"word":"menos","start":41.76,"end":42.08},
-            {"word":"leyes.","start":42.08,"end":42.48},{"word":"Si","start":43.26,"end":43.7},
-            {"word":"crees","start":43.7,"end":43.94},{"word":"que","start":43.94,"end":44.12},
-            {"word":"hay","start":44.12,"end":44.32},{"word":"que","start":44.32,"end":44.76},
-            {"word":"contarlo","start":44.76,"end":45.36},{"word":"dale","start":45.36,"end":46.08},
-            {"word":"a","start":46.08,"end":46.24},{"word":"seguir,","start":46.24,"end":46.48},
-            {"word":"porque","start":46.88,"end":47.18},{"word":"esto","start":47.18,"end":47.44},
-            {"word":"no","start":47.44,"end":47.96},{"word":"sale","start":47.96,"end":48.16},
-            {"word":"en","start":48.16,"end":48.32},{"word":"el","start":48.32,"end":48.42},
-            {"word":"televiario.","start":48.42,"end":48.96},
-          ],
+          videoSrc: 'http://localhost:3001/recordings/rec_2026-04-20-09-51-17.webm',
+          durationFrames: 2430,
           showCaptions: true,
           captionPreset: 'hormozi' as const,
           captionPosition: 'center' as const,
+          captionMode: 'phrases' as const,
           handle: 'vitaminak.of',
           ctaText: 'Sígueme para más →',
-          ctaDurationFrames: 80,
+          ctaDurationFrames: 90,
           accentColor: '#E63946',
+          borderFlashes: [],
+          captions: [
+            {"word":"en","start":1.28,"end":1.8},{"word":"2020","start":1.8,"end":2.32},
+            {"word":"los","start":2.32,"end":3.16},{"word":"medios","start":3.16,"end":3.52},
+            {"word":"ya","start":3.52,"end":3.72},{"word":"tenían","start":3.72,"end":4.0},
+            {"word":"un","start":4.0,"end":4.26},{"word":"plan","start":4.26,"end":4.5},
+            {"word":"muy","start":4.5,"end":5.02},{"word":"sencillo","start":5.02,"end":5.96},
+            {"word":"y","start":5.96,"end":6.24},{"word":"es","start":6.24,"end":6.34},
+            {"word":"que","start":6.34,"end":6.42},{"word":"cada","start":6.42,"end":6.6},
+            {"word":"vez","start":6.6,"end":6.74},{"word":"que","start":6.74,"end":6.9},
+            {"word":"Alvise","start":6.9,"end":7.16},{"word":"se","start":7.16,"end":7.28},
+            {"word":"decía","start":7.28,"end":7.48},{"word":"algo","start":7.48,"end":7.76},
+            {"word":"incómodo","start":7.76,"end":8.38},{"word":"sobre","start":8.38,"end":8.76},
+            {"word":"ellos","start":8.76,"end":8.92},{"word":"los","start":8.92,"end":9.06},
+            {"word":"que","start":9.06,"end":9.16},{"word":"ya","start":9.16,"end":9.28},
+            {"word":"sabéis","start":9.28,"end":9.76},{"word":"lo","start":9.76,"end":10.32},
+            {"word":"llamaban","start":10.32,"end":10.66},{"word":"bulero","start":10.66,"end":11.14},
+            {"word":"pero","start":11.14,"end":12.06},{"word":"los","start":12.06,"end":12.42},
+            {"word":"años","start":12.42,"end":12.64},{"word":"han","start":12.64,"end":12.84},
+            {"word":"dicho","start":12.84,"end":12.96},{"word":"lo","start":12.96,"end":13.1},
+            {"word":"contrario","start":13.1,"end":13.44},{"word":"y","start":13.44,"end":13.7},
+            {"word":"es","start":13.7,"end":13.8},{"word":"que","start":13.8,"end":13.9},
+            {"word":"el","start":13.9,"end":14.0},{"word":"Plural","start":14.0,"end":14.26},
+            {"word":"en","start":14.26,"end":14.52},{"word":"2020","start":14.52,"end":14.9},
+            {"word":"publicó","start":14.9,"end":15.4},{"word":"un","start":15.4,"end":15.44},
+            {"word":"titular","start":15.44,"end":15.74},{"word":"que","start":15.74,"end":15.96},
+            {"word":"decía","start":15.96,"end":16.34},{"word":"el","start":16.34,"end":16.8},
+            {"word":"enésimo","start":16.8,"end":17.32},{"word":"bulo","start":17.32,"end":17.76},
+            {"word":"de","start":17.76,"end":17.86},{"word":"Alvise","start":17.86,"end":18.08},
+            {"word":"Pérez","start":18.08,"end":18.62},{"word":"el","start":18.62,"end":19.64},
+            {"word":"enésimo","start":19.64,"end":20.32},{"word":"como","start":20.32,"end":20.96},
+            {"word":"diciendo","start":20.96,"end":21.32},{"word":"ya","start":21.32,"end":22.04},
+            {"word":"estamos","start":22.04,"end":22.46},{"word":"otra","start":22.46,"end":22.76},
+            {"word":"vez","start":22.76,"end":23.1},{"word":"con","start":23.1,"end":23.32},
+            {"word":"este","start":23.32,"end":23.48},{"word":"mentiroso","start":23.48,"end":23.96},
+            {"word":"que","start":23.96,"end":24.16},{"word":"no","start":24.16,"end":24.24},
+            {"word":"hace","start":24.24,"end":24.34},{"word":"falta","start":24.34,"end":24.48},
+            {"word":"ni","start":24.48,"end":24.78},{"word":"leer","start":24.78,"end":25.04},
+            {"word":"el","start":25.04,"end":25.16},{"word":"artículo","start":25.16,"end":25.72},
+            {"word":"pero","start":25.72,"end":26.72},{"word":"seis","start":26.72,"end":26.92},
+            {"word":"años","start":26.92,"end":27.14},{"word":"después","start":27.14,"end":27.56},
+            {"word":"ahora","start":27.56,"end":28.52},{"word":"The","start":28.52,"end":28.98},
+            {"word":"Objective","start":28.98,"end":29.46},{"word":"publica","start":29.46,"end":29.82},
+            {"word":"lo","start":29.82,"end":29.9},{"word":"siguiente","start":29.9,"end":30.14},
+            {"word":"Zapatero","start":31.38,"end":32.98},{"word":"tenía","start":32.98,"end":33.2},
+            {"word":"un","start":33.2,"end":33.38},{"word":"chalet","start":33.38,"end":33.6},
+            {"word":"que","start":33.6,"end":33.82},{"word":"no","start":33.82,"end":34.0},
+            {"word":"cuadraba","start":34.0,"end":34.9},{"word":"su","start":34.9,"end":35.54},
+            {"word":"supuesto","start":35.54,"end":35.94},{"word":"testaferro","start":35.94,"end":36.7},
+            {"word":"cobró","start":36.7,"end":36.98},{"word":"458.000","start":36.98,"end":38.22},
+            {"word":"euros","start":38.22,"end":38.44},{"word":"de","start":38.44,"end":38.66},
+            {"word":"Plus","start":38.66,"end":38.84},{"word":"Ultra","start":38.84,"end":39.34},
+            {"word":"la","start":39.34,"end":39.74},{"word":"aerolínea","start":39.74,"end":40.22},
+            {"word":"que","start":40.22,"end":40.44},{"word":"el","start":40.44,"end":40.52},
+            {"word":"gobierno","start":40.52,"end":40.74},{"word":"rescató","start":40.74,"end":41.34},
+            {"word":"con","start":41.34,"end":41.48},{"word":"53","start":41.48,"end":41.78},
+            {"word":"millones","start":41.78,"end":42.06},{"word":"de","start":42.06,"end":42.24},
+            {"word":"dinero","start":42.24,"end":42.4},{"word":"público","start":42.4,"end":42.82},
+            {"word":"entonces","start":45.16,"end":45.86},{"word":"la","start":45.86,"end":46.06},
+            {"word":"pregunta","start":46.06,"end":46.28},{"word":"muy","start":46.28,"end":46.52},
+            {"word":"sencilla","start":46.52,"end":47.48},{"word":"muy","start":47.48,"end":47.68},
+            {"word":"simple","start":47.68,"end":48.04},{"word":"los","start":48.04,"end":49.0},
+            {"word":"que","start":49.0,"end":49.16},{"word":"escribieron","start":49.16,"end":49.66},
+            {"word":"el","start":49.66,"end":50.14},{"word":"enésimo","start":50.14,"end":50.56},
+            {"word":"bulo","start":50.56,"end":50.9},{"word":"los","start":50.9,"end":51.08},
+            {"word":"que","start":51.08,"end":51.18},{"word":"le","start":51.18,"end":51.26},
+            {"word":"llamaban","start":51.26,"end":51.48},{"word":"mentiroso","start":51.48,"end":51.98},
+            {"word":"los","start":51.98,"end":52.16},{"word":"que","start":52.16,"end":52.3},
+            {"word":"convirtieron","start":52.3,"end":52.76},{"word":"Alvise","start":52.76,"end":53.16},
+            {"word":"en","start":53.16,"end":53.34},{"word":"un","start":53.34,"end":53.48},
+            {"word":"mentiroso","start":53.48,"end":54.22},{"word":"de","start":54.22,"end":54.36},
+            {"word":"España","start":54.36,"end":54.72},{"word":"qué","start":55.64,"end":56.28},
+            {"word":"dicen","start":56.28,"end":56.52},{"word":"ahora","start":56.52,"end":56.78},
+            {"word":"dónde","start":56.78,"end":57.9},{"word":"está","start":57.9,"end":58.26},
+            {"word":"la","start":58.26,"end":58.66},{"word":"rectificación","start":58.66,"end":59.28},
+            {"word":"no","start":61.06,"end":61.22},{"word":"ha","start":61.22,"end":61.26},
+            {"word":"mentido","start":61.26,"end":61.64},{"word":"ha","start":61.64,"end":62.12},
+            {"word":"mentido","start":62.12,"end":62.46},{"word":"los","start":62.46,"end":62.64},
+            {"word":"que","start":62.64,"end":62.8},{"word":"le","start":62.8,"end":62.88},
+            {"word":"llamaron","start":62.88,"end":63.16},{"word":"mentiroso","start":63.16,"end":63.76},
+            {"word":"y","start":63.76,"end":64.3},{"word":"eso","start":64.3,"end":64.62},
+            {"word":"en","start":64.62,"end":65.04},{"word":"un","start":65.04,"end":65.16},
+            {"word":"país","start":65.16,"end":65.36},{"word":"normal","start":65.36,"end":65.86},
+            {"word":"tendría","start":65.86,"end":66.48},{"word":"consecuencias","start":66.48,"end":67.34},
+            {"word":"todos","start":73.58,"end":73.74},{"word":"estos","start":73.74,"end":74.04},
+            {"word":"lo","start":74.04,"end":74.24},{"word":"que","start":74.24,"end":74.32},
+            {"word":"intentaban","start":74.32,"end":74.7},{"word":"hacer","start":74.7,"end":74.92},
+            {"word":"era","start":74.92,"end":75.14},{"word":"frenarle","start":75.14,"end":76.12},
+            {"word":"pero","start":76.12,"end":77.18},{"word":"nos","start":77.44,"end":78.08},
+            {"word":"están","start":78.08,"end":78.32},{"word":"dando","start":78.32,"end":78.54},
+            {"word":"alas","start":78.54,"end":78.96},
+          ],
           segments: [
-            // 8.1s "609 asesores" → panel split derecha  (f243–f420)
+            // ~10.66s "llamaban bulero" → keyword split-bottom — rojo: la mentira de los medios
             {
               mode: 'split-bottom' as const,
-              startFrame: 230,
-              endFrame: 420,
-              panel: {
-                type: 'stat' as const,
-                value: '609',
-                label: 'asesores en Moncloa',
-                subtext: 'Récord histórico · Sánchez 2026',
-                trend: 'up' as const,
-              },
-            },
-            // 12.5s "1.264 cargos" → panel split derecha  (f375–f500)
-            {
-              mode: 'split-bottom' as const,
-              startFrame: 435,
-              endFrame: 560,
-              panel: {
-                type: 'stat' as const,
-                value: '1.264',
-                label: 'cargos en todo el Gobierno',
-                trend: 'up' as const,
-              },
-            },
-            // 14.4s "63%…453 nivel 30" → lista split izquierda  (f432–f670)
-            {
-              mode: 'split-top' as const,
-              startFrame: 580,
-              endFrame: 690,
-              panel: {
-                type: 'list' as const,
-                title: 'Sin concurso público',
-                items: ['453 en nivel 30', 'El rango más alto', 'Sin oposición'],
-              },
-            },
-            // 29.96s "76%" → stat-pop flotante  (f899–f1000)
-            {
-              mode: 'stat-pop' as const,
-              startFrame: 870,
-              endFrame: 1010,
-              value: '+76%',
-              label: 'más gasto en asesores',
-              subtext: '40M€ (2018) → 71M€ (2025)',
-            },
-            // 43.26s CTA → keyword cierre  (f1298–f1420)
-            {
-              mode: 'split-bottom' as const,
-              startFrame: 1300,
-              endFrame: 1430,
+              tone: 'negative' as const,
+              startFrame: 290,
+              endFrame: 430,
               panel: {
                 type: 'keyword' as const,
-                headline: 'Esto no sale en el telediario',
-                highlight: 'telediario',
+                headline: '"El enésimo bulo de Alvise Pérez"',
+                highlight: 'bulo',
+              },
+            },
+            // ~27s "The Objective publica" → split-top — rojo: corrupción confirmada
+            {
+              mode: 'split-top' as const,
+              tone: 'negative' as const,
+              startFrame: 820,
+              endFrame: 1000,
+              panel: {
+                type: 'list' as const,
+                title: 'The Objective · 2026',
+                items: ['Chalet de Zapatero sin declarar', 'Testaferro cobra de Plus Ultra', '458.000€ en consultoría'],
+              },
+            },
+            // ~36.98s "458.000 euros" → stat-pop — rojo: dinero público robado
+            {
+              mode: 'stat-pop' as const,
+              tone: 'negative' as const,
+              startFrame: 1110,
+              endFrame: 1270,
+              value: '458.000€',
+              label: 'cobró el testaferro de Zapatero de Plus Ultra',
+              subtext: 'Rescate gobierno: 53 millones de dinero público',
+            },
+            // ~55.64s "qué dicen ahora" → keyword — azul: pregunta directa, neutro
+            {
+              mode: 'split-bottom' as const,
+              tone: 'neutral' as const,
+              startFrame: 1670,
+              endFrame: 1850,
+              panel: {
+                type: 'keyword' as const,
+                headline: '¿Dónde está la rectificación?',
+                highlight: 'rectificación',
+              },
+            },
+            // ~61.26s "no mintió Alvise" → quote — verde: vindicación, Alvise tenía razón
+            {
+              mode: 'split-bottom' as const,
+              tone: 'positive' as const,
+              startFrame: 1840,
+              endFrame: 2050,
+              panel: {
+                type: 'quote' as const,
+                text: 'No mintió Alvise. Mintieron los que le llamaron mentiroso.',
+                source: 'vitaminak.of',
+              },
+            },
+          ],
+        }}
+      />
+
+      {/* ─── HybridReel — SALF Vivienda (rec_2026-04-21-09-27-45, ~60s)
+           Cortado en "preguntarte" (60.16s) — blooper final excluido
+      ─────────────────────────────────────────────────────────────────────────── */}
+      <Composition
+        id="HybridReel"
+        component={HybridReel}
+        durationInFrames={1865}
+        fps={BRAND.fps}
+        width={BRAND.widthVertical}
+        height={BRAND.heightVertical}
+        schema={hybridReelSchema}
+        defaultProps={{
+          videoSrc: 'http://localhost:3001/recordings/rec_2026-04-21-09-27-45.webm',
+          durationFrames: 1865,
+          showCaptions: true,
+          captionPreset: 'hormozi' as const,
+          captionPosition: 'center' as const,
+          captionMode: 'keyword-xl' as const,
+          handle: 'vitaminak.of',
+          ctaText: 'Vota SALF · 17 Mayo →',
+          ctaDurationFrames: 90,
+          accentColor: '#E63946',
+
+          alertBadge: {
+            text: '17 MAYO · VOTA SALF',
+            tone: 'positive' as const,
+            startFrame: 0,
+            holdFrames: 120,
+          },
+
+          borderFlashes: [
+            { frame: 502,  tone: 'positive' as const, duration: 20 },  // "Uno" — 16.74s
+            { frame: 775,  tone: 'positive' as const, duration: 20 },  // "Dos" — 25.82s
+            { frame: 1193, tone: 'positive' as const, duration: 20 },  // "Tres" — 39.76s
+          ],
+
+          dataCounter: { total: 3 },
+
+          captions: [
+            // Seg 0 — hook pregunta
+            {"word":"porque","start":0.0,"end":0.78},{"word":"en","start":0.78,"end":1.1},
+            {"word":"Andalucía","start":1.1,"end":1.52},{"word":"los","start":1.52,"end":1.7},
+            {"word":"jóvenes","start":1.7,"end":1.94},{"word":"no","start":1.94,"end":2.22},
+            {"word":"pueden","start":2.22,"end":2.44},{"word":"comprar","start":2.44,"end":2.74},
+            {"word":"casas","start":2.74,"end":3.22},{"word":"y","start":3.22,"end":3.38},
+            {"word":"los","start":3.38,"end":3.46},{"word":"okupas","start":3.46,"end":3.88},
+            {"word":"duermen","start":3.88,"end":4.14},{"word":"tranquilos","start":4.14,"end":4.68},
+            // Seg 1 — culpa
+            {"word":"La","start":5.02,"end":5.52},{"word":"culpa","start":5.52,"end":5.64},
+            {"word":"es","start":5.64,"end":5.8},{"word":"de","start":5.8,"end":5.86},
+            {"word":"los","start":5.86,"end":5.92},{"word":"impuestos","start":5.92,"end":6.16},
+            {"word":"abusivos","start":6.16,"end":6.64},{"word":"de","start":6.96,"end":7.14},
+            {"word":"la","start":7.14,"end":7.22},{"word":"pasividad","start":7.22,"end":7.52},
+            {"word":"cómplice","start":7.52,"end":7.94},{"word":"de","start":7.94,"end":8.06},
+            {"word":"los","start":8.06,"end":8.16},{"word":"políticos","start":8.16,"end":8.72},
+            // Seg 2 — SALF declaramos guerra
+            {"word":"pero","start":9.46,"end":9.7},{"word":"con","start":9.7,"end":9.9},
+            {"word":"SALF","start":9.9,"end":10.1},{"word":"declaramos","start":10.42,"end":10.82},
+            {"word":"la","start":10.82,"end":10.98},{"word":"guerra","start":10.98,"end":11.14},
+            {"word":"a","start":11.14,"end":11.28},{"word":"este","start":11.28,"end":11.3},
+            {"word":"problema","start":11.3,"end":11.6},{"word":"Vamos","start":11.9,"end":12.04},
+            {"word":"a","start":12.04,"end":12.18},{"word":"acabar","start":12.18,"end":12.3},
+            {"word":"con","start":12.3,"end":12.46},{"word":"la","start":12.46,"end":12.54},
+            {"word":"fiesta","start":12.54,"end":12.72},{"word":"de","start":12.72,"end":12.84},
+            // Seg 3 — tres medidas + UNO
+            {"word":"la","start":12.84,"end":12.9},{"word":"especulación","start":12.9,"end":13.48},
+            {"word":"con","start":13.72,"end":13.86},{"word":"la","start":13.86,"end":13.94},
+            {"word":"ocupación","start":13.94,"end":14.48},{"word":"solo","start":14.86,"end":15.1},
+            {"word":"con","start":15.1,"end":15.36},{"word":"tres","start":15.36,"end":15.56},
+            {"word":"medidas","start":15.56,"end":15.94},{"word":"UNO","start":16.74,"end":16.98},
+            {"word":"convertir","start":17.48,"end":17.66},{"word":"Andalucía","start":17.72,"end":18.02},
+            {"word":"en","start":18.02,"end":18.08},{"word":"un","start":18.08,"end":18.18},
+            // Seg 4 — paraíso fiscal
+            {"word":"paraíso","start":18.18,"end":18.5},{"word":"fiscal","start":18.5,"end":18.96},
+            {"word":"primera","start":19.4,"end":19.8},{"word":"vivienda","start":19.8,"end":20.38},
+            {"word":"eliminando","start":20.38,"end":20.98},{"word":"todos","start":20.98,"end":21.36},
+            {"word":"los","start":21.36,"end":21.64},{"word":"impuestos","start":21.64,"end":22.0},
+            {"word":"autonómicos","start":22.0,"end":22.58},{"word":"compra","start":22.8,"end":23.02},
+            // Seg 5 — hogar habitual + DOS
+            {"word":"de","start":23.02,"end":23.24},{"word":"tu","start":23.24,"end":23.48},
+            {"word":"primer","start":23.48,"end":23.8},{"word":"hogar","start":23.8,"end":24.46},
+            {"word":"habitual","start":24.46,"end":25.08},{"word":"DOS","start":25.82,"end":26.2},
+            {"word":"desalojos","start":26.6,"end":26.92},{"word":"policiales","start":26.92,"end":27.44},
+            {"word":"máximo","start":27.6,"end":27.8},{"word":"de","start":27.8,"end":28.0},
+            {"word":"24","start":28.0,"end":28.42},{"word":"horas","start":28.42,"end":28.84},
+            // Seg 6 — IRPF + retroactividad
+            {"word":"te","start":30.54,"end":30.72},{"word":"deducirás","start":30.72,"end":31.18},
+            {"word":"el","start":31.18,"end":31.32},{"word":"IRPF","start":31.32,"end":31.88},
+            {"word":"echar","start":32.94,"end":33.1},{"word":"al","start":33.1,"end":33.2},
+            {"word":"okupa","start":33.2,"end":33.46},{"word":"retroactividad","start":33.86,"end":34.44},
+            {"word":"10","start":34.64,"end":34.88},{"word":"años","start":34.88,"end":35.18},
+            // Seg 7 — Ningún okupa + TRES
+            {"word":"Ningún","start":35.66,"end":36.1},{"word":"okupa","start":36.1,"end":36.58},
+            {"word":"recibirá","start":36.58,"end":37.14},{"word":"ayuda","start":37.42,"end":37.6},
+            {"word":"social","start":37.6,"end":37.98},{"word":"en","start":37.98,"end":38.4},
+            {"word":"Andalucía","start":38.4,"end":39.04},{"word":"TRES","start":39.84,"end":40.06},
+            {"word":"expulsión","start":40.62,"end":41.12},{"word":"exprés","start":41.12,"end":41.7},
+            // Seg 8 — VPO
+            {"word":"viviendas","start":42.16,"end":42.68},{"word":"protección","start":42.8,"end":43.16},
+            {"word":"oficial","start":43.16,"end":43.58},{"word":"Quién","start":44.04,"end":44.38},
+            {"word":"ocupe","start":44.38,"end":44.9},{"word":"vivienda","start":45.66,"end":46.18},
+            {"word":"pública","start":46.18,"end":46.8},{"word":"para","start":46.8,"end":47.3},
+            {"word":"delinquir","start":47.3,"end":47.92},
+            // Seg 9 — Perderá + CTA
+            {"word":"Perderá","start":48.66,"end":48.98},{"word":"el","start":48.98,"end":49.04},
+            {"word":"derecho","start":49.04,"end":49.24},{"word":"inmediatamente","start":49.24,"end":49.86},
+            {"word":"17","start":51.34,"end":51.68},{"word":"de","start":51.68,"end":51.88},
+            {"word":"mayo","start":51.88,"end":52.14},{"word":"nosotros","start":52.56,"end":53.34},
+            {"word":"protegemos","start":53.34,"end":53.88},
+            // Seg 10 — propietario + Vota SALF
+            {"word":"propietario","start":54.02,"end":54.46},{"word":"no","start":54.76,"end":55.06},
+            {"word":"al","start":55.06,"end":55.2},{"word":"delincuente","start":55.2,"end":55.74},
+            {"word":"Vota","start":56.22,"end":56.52},{"word":"SALF","start":56.52,"end":56.78},
+            {"word":"recupera","start":56.94,"end":57.34},{"word":"tu","start":57.34,"end":57.44},
+            {"word":"tierra","start":57.44,"end":57.7},
+            // Seg 11 — loop trap (blooper excluido a partir de aquí)
+            {"word":"que","start":59.18,"end":59.3},{"word":"volver","start":59.3,"end":59.46},
+            {"word":"a","start":59.46,"end":59.6},{"word":"preguntarte","start":59.6,"end":60.16},
+          ],
+
+          segments: [
+            // MEDIDA 1 — paraíso fiscal (Uno: 16.74s = frame 502 → habitual: 25.08s = frame 753)
+            {
+              mode: 'split-bottom' as const,
+              tone: 'positive' as const,
+              dataIndex: 1,
+              startFrame: 502,
+              endFrame: 753,
+              panel: {
+                type: 'stat' as const,
+                value: '0%',
+                label: 'impuestos autonómicos en tu primera vivienda',
+                subtext: 'SALF Andalucía · Medida 1',
+                trend: 'down' as const,
+              },
+            },
+            // MEDIDA 2 — desalojos 24h (Dos: 25.82s = frame 775 → antes de "10": 34.44s = frame 1033)
+            {
+              mode: 'overlay-card' as const,
+              tone: 'positive' as const,
+              dataIndex: 2,
+              startFrame: 775,
+              endFrame: 1033,
+              eyebrow: '⚡ MEDIDA 2 · DESALOJOS',
+              value: '24h',
+              label: 'máximo para desalojar al okupa',
+              source: 'Deducción IRPF retroactiva · 10 años',
+            },
+            // Stat pop — 10 años retroactivos (34.64s = frame 1039 → antes de Tres: 39.5s = frame 1185)
+            {
+              mode: 'stat-pop' as const,
+              tone: 'positive' as const,
+              startFrame: 1039,
+              endFrame: 1185,
+              value: '10',
+              label: 'años retroactivos de deducción IRPF',
+              subtext: 'por gastos de desalojo de okupa',
+            },
+            // MEDIDA 3 — expulsión exprés VPO (Tres: 39.76s = frame 1193 → 47.92s = frame 1438)
+            {
+              mode: 'split-bottom' as const,
+              tone: 'positive' as const,
+              dataIndex: 3,
+              startFrame: 1193,
+              endFrame: 1438,
+              panel: {
+                type: 'keyword' as const,
+                headline: 'Expulsión exprés en VPO',
+                highlight: 'exprés',
+                subtext: 'Quien delinca pierde el derecho inmediatamente',
+              },
+            },
+            // Quote cierre (50.78s = frame 1523 → fin)
+            {
+              mode: 'split-bottom' as const,
+              tone: 'neutral' as const,
+              startFrame: 1523,
+              endFrame: 1865,
+              panel: {
+                type: 'quote' as const,
+                text: 'Protegemos al propietario, no al delincuente.',
+                source: 'SALF · 17 Mayo 2026',
               },
             },
           ],
@@ -631,7 +995,7 @@ export const RemotionRoot: React.FC = () => {
       {(['hormozi','bold','neon','box','outline','minimal','karaoke'] as const).map((preset) => (
         <Composition
           key={preset}
-          id={`Captions_${preset}`}
+          id={`Captions-${preset}`}
           component={CaptionsStyled}
           durationInFrames={240}
           fps={BRAND.fps}

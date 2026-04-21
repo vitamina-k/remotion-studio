@@ -1,41 +1,47 @@
 {
-  "title": "609 asesores — Sánchez bate su récord",
+  "title": "SALF Vivienda — Jóvenes y Okupas Andalucía",
   "scenes": [
     {
       "type": "hook",
-      "durationFrames": 210,
-      "text": "¿Sabes cuántos asesores tiene Sánchez en Moncloa? Más que nunca. Más que nadie. Y nadie sabe exactamente cuánto cobran.",
-      "note": "Gancho. Tono directo, pausa tras cada pregunta."
-    },
-    {
-      "type": "stat",
-      "durationFrames": 150,
-      "text": "609 asesores solo en Presidencia. Es el máximo histórico. Y en todo el Gobierno suman 1.264 cargos de confianza.",
-      "note": "Énfasis en '609' y '1.264'. Habla despacio."
+      "text": "¿Por qué en Andalucía los jóvenes no pueden comprar casa... y los okupas duermen tranquilos?",
+      "note": "Pausa dramática después de la pregunta. Mirar fijo a cámara.",
+      "durationFrames": 210
     },
     {
       "type": "keyword",
-      "durationFrames": 180,
-      "text": "El 63 por ciento están en los rangos más altos. 453 en nivel 30. El máximo. Sin oposición. Sin concurso público.",
-      "note": "Pausa después de 'sin oposición' y 'sin concurso público'."
+      "text": "La culpa es de los impuestos abusivos y de la pasividad cómplice de los políticos.",
+      "note": "Énfasis en 'impuestos abusivos' y 'pasividad cómplice'.",
+      "durationFrames": 210
     },
     {
       "type": "stat",
-      "durationFrames": 150,
-      "text": "En 2018 el Gobierno gastaba 40 millones en asesores. En 2025: 71 millones. Un aumento del 76 por ciento. En solo siete años.",
-      "note": "Énfasis en el contraste: '40 millones' vs '71 millones'."
+      "text": "Pero con SALF declaramos la guerra a este problema. Vamos a acabar con la fiesta de la especulación y la okupación — con TRES medidas.",
+      "note": "Subir el tono en 'declaramos la guerra'. Pausa antes de 'TRES medidas'.",
+      "durationFrames": 240
     },
     {
-      "type": "comparison",
-      "durationFrames": 180,
-      "text": "Y todo esto mientras la legislatura está encallada. Sin presupuestos. Sin mayoría. Más asesores, menos leyes.",
-      "note": "Ironía deliberada. Baja el ritmo al final."
+      "type": "keyword",
+      "text": "UNO → Convertiremos Andalucía en un paraíso fiscal de la primera vivienda, eliminando TODOS los impuestos autonómicos en la compra de tu primer hogar habitual.",
+      "note": "Énfasis en 'paraíso fiscal' y 'TODOS los impuestos'. Hablar despacio.",
+      "durationFrames": 270
     },
     {
-      "type": "cta",
-      "durationFrames": 120,
-      "text": "Si crees que hay que contarlo, dale a seguir. Porque esto no sale en el telediario.",
-      "note": "Míralo directo a cámara. Tono tranquilo pero firme."
+      "type": "stat",
+      "text": "DOS → Desalojos policiales en un máximo de 24 horas. Y mientras lo logramos: te deducirás en el IRPF los gastos de echar al okupa — retroactivo 10 años. Ningún okupa recibirá ayudas sociales en Andalucía.",
+      "note": "Énfasis en '24 horas', '10 años' y 'ningún okupa'. Es la medida más larga.",
+      "durationFrames": 450
+    },
+    {
+      "type": "keyword",
+      "text": "TRES → Expulsión exprés en Viviendas de Protección Oficial. Quien okupe o use una vivienda pública para delinquir... perderá el derecho inmediatamente.",
+      "note": "Pausa larga antes de 'perderá el derecho'. Contundente.",
+      "durationFrames": 270
+    },
+    {
+      "type": "quote",
+      "text": "Este 17 de mayo nosotros protegemos al propietario, no al delincuente. Vota a SALF y recupera tu tierra — para que no tengas que volver a preguntarte...",
+      "note": "La última frase conecta con la pregunta inicial. Loop trap. Bajar el tono y mirar a cámara.",
+      "durationFrames": 270
     }
   ]
 }

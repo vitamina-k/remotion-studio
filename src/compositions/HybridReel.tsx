@@ -62,18 +62,26 @@ const panelContentSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
+const toneSchema = z.enum(['negative', 'positive', 'neutral']).optional().default('neutral');
+
+const dataIndexField = z.number().optional(); // qué dato es (1, 2, 3…) para el contador
+
 const segmentSchema = z.discriminatedUnion('mode', [
   z.object({
-    mode: z.literal('split-bottom'),   // vídeo arriba | panel abajo
+    mode: z.literal('split-bottom'),
     startFrame: z.number(),
     endFrame: z.number(),
     panel: panelContentSchema,
+    tone: toneSchema,
+    dataIndex: dataIndexField,
   }),
   z.object({
-    mode: z.literal('split-top'),      // panel arriba | vídeo abajo
+    mode: z.literal('split-top'),
     startFrame: z.number(),
     endFrame: z.number(),
     panel: panelContentSchema,
+    tone: toneSchema,
+    dataIndex: dataIndexField,
   }),
   z.object({
     mode: z.literal('stat-pop'),
@@ -82,6 +90,19 @@ const segmentSchema = z.discriminatedUnion('mode', [
     value: z.string(),
     label: z.string(),
     subtext: z.string().optional(),
+    tone: toneSchema,
+    dataIndex: dataIndexField,
+  }),
+  z.object({
+    mode: z.literal('overlay-card'),
+    startFrame: z.number(),
+    endFrame: z.number(),
+    eyebrow: z.string(),
+    value: z.string(),
+    label: z.string(),
+    source: z.string().optional(),
+    tone: toneSchema,
+    dataIndex: dataIndexField,
   }),
 ]);
 
@@ -92,11 +113,30 @@ export const hybridReelSchema = z.object({
   showCaptions: z.boolean().optional().default(true),
   captionPreset: z.enum(captionPresets).optional().default('hormozi'),
   captionPosition: z.enum(['top', 'center', 'bottom']).optional().default('center'),
+  // 'phrases' = subtítulos grupales (original) | 'keyword-xl' = 1-2 palabras grandes
+  captionMode: z.enum(['phrases', 'keyword-xl']).optional().default('phrases'),
   handle: z.string().optional().default('vitaminak.of'),
   ctaText: z.string().optional().default('Sígueme para más →'),
   ctaDurationFrames: z.number().optional().default(50),
   accentColor: z.string().optional().default('#E63946'),
   segments: z.array(segmentSchema).optional().default([]),
+  // Badge BREAKING/CONFIRMADO/EXCLUSIVA
+  alertBadge: z.object({
+    text: z.string(),
+    tone: toneSchema,
+    startFrame: z.number().optional().default(0),
+    holdFrames: z.number().optional().default(90), // frames visibles tras el blink
+  }).optional(),
+  // Reacción de borde en frames específicos
+  borderFlashes: z.array(z.object({
+    frame: z.number(),
+    tone: toneSchema,
+    duration: z.number().optional().default(18),
+  })).optional().default([]),
+  // Contador de datos "● 1 / 3"
+  dataCounter: z.object({
+    total: z.number(),
+  }).optional(),
 });
 
 export type HybridReelProps = z.infer<typeof hybridReelSchema>;
@@ -104,6 +144,36 @@ export type HybridReelProps = z.infer<typeof hybridReelSchema>;
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Parsea números en notación española: 458.000 → 458000, 1.264 → 1264
+function parseSpanishNum(value: string): { num: number; isNum: boolean; prefix: string; suffix: string } {
+  const prefix = value.startsWith('+') ? '+' : '';
+  const cleaned = value.replace(/[^0-9.,]/g, '');
+  // Detecta separador de miles español: dígitos + punto + exactamente 3 dígitos (repetible)
+  const isThousands = /^\d{1,3}(\.\d{3})+$/.test(cleaned);
+  const normalized = isThousands ? cleaned.replace(/\./g, '') : cleaned.replace(',', '.');
+  const num = parseFloat(normalized);
+  const isNum = !isNaN(num) && isFinite(num);
+  const suffix = isNum ? value.replace(/[+\-0-9.,]/g, '') : '';
+  return { num, isNum, prefix, suffix };
+}
+
+// ─── SISTEMA DE TONOS SEMÁNTICOS ────────────────────────────────────────────
+// rojo = dato negativo / corrupción / pérdida
+// verde = logro / propuesta buena / cifra positiva
+// azul  = dato neutro / cita / contexto
+const TONE_COLORS = {
+  negative: '#E63946',
+  positive: '#22C55E',
+  neutral:  '#3B82F6',
+} as const;
+
+type Tone = 'negative' | 'positive' | 'neutral';
+
+function resolveAccent(tone: Tone | null | undefined, fallback: string): string {
+  if (tone && tone in TONE_COLORS) return TONE_COLORS[tone as keyof typeof TONE_COLORS];
+  return fallback;
+}
 
 function hexToRgb(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -132,20 +202,17 @@ type PanelProps = {
   frame: number;
   fps: number;
   accent: string;
+  tone: Tone;
 };
 
 /* ── STAT PANEL ── */
-function StatPanel({ content, frame, fps, accent }: PanelProps) {
+function StatPanel({ content, frame, fps, accent, tone }: PanelProps) {
   if (content.type !== 'stat') return null;
   const f = Math.min(frame, 80);
   const entryS = spring({ frame: f, fps, config: { damping: 18, stiffness: 100, mass: 0.8 } });
   const progress = interpolate(f, [0, 55], [0, 1], { extrapolateRight: 'clamp' });
 
-  const raw = content.value.replace(/[^0-9.-]/g, '');
-  const numVal = parseFloat(raw);
-  const isNum = !isNaN(numVal);
-  const prefix = content.value.startsWith('+') ? '+' : '';
-  const suffix = isNum ? content.value.replace(/[+\-0-9.,]/g, '') : '';
+  const { num: numVal, isNum, prefix, suffix } = parseSpanishNum(content.value);
   const displayNum = isNum ? Math.round(numVal * progress) : 0;
 
   const trendColor = content.trend === 'up' ? BRAND.colors.green : content.trend === 'down' ? BRAND.colors.red : accent;
@@ -169,7 +236,7 @@ function StatPanel({ content, frame, fps, accent }: PanelProps) {
           textShadow: `0 0 70px rgba(${hexToRgb(accent)},0.6)`,
           letterSpacing: '-0.03em',
         }}>
-          {prefix}{isNum ? displayNum : content.value}{suffix}
+          {prefix}{isNum ? displayNum.toLocaleString('es-ES') : content.value}{suffix}
         </div>
 
         {/* Label */}
@@ -202,7 +269,7 @@ function StatPanel({ content, frame, fps, accent }: PanelProps) {
 }
 
 /* ── KEYWORD PANEL ── */
-function KeywordPanel({ content, frame, fps, accent }: PanelProps) {
+function KeywordPanel({ content, frame, fps, accent, tone: _tone }: PanelProps) {
   if (content.type !== 'keyword') return null;
   const words = content.headline.split(' ');
   const DELAY = 5;
@@ -238,7 +305,7 @@ function KeywordPanel({ content, frame, fps, accent }: PanelProps) {
 }
 
 /* ── QUOTE PANEL ── */
-function QuotePanel({ content, frame, fps, accent }: PanelProps) {
+function QuotePanel({ content, frame, fps, accent, tone: _tone }: PanelProps) {
   if (content.type !== 'quote') return null;
   const qS = spring({ frame: Math.min(frame, 30), fps, config: { damping: 16, stiffness: 80 } });
   const textS = spring({ frame: Math.max(0, frame - 10), fps, config: { damping: 20, stiffness: 100 } });
@@ -260,7 +327,7 @@ function QuotePanel({ content, frame, fps, accent }: PanelProps) {
 }
 
 /* ── HOOK PANEL ── */
-function HookPanel({ content, frame, fps, accent }: PanelProps) {
+function HookPanel({ content, frame, fps, accent, tone: _tone }: PanelProps) {
   if (content.type !== 'hook') return null;
   const CHARS_PER_FRAME = 0.6;
   const charsVisible = Math.floor(frame * CHARS_PER_FRAME);
@@ -282,7 +349,7 @@ function HookPanel({ content, frame, fps, accent }: PanelProps) {
 }
 
 /* ── LIST PANEL ── */
-function ListPanel({ content, frame, fps, accent }: PanelProps) {
+function ListPanel({ content, frame, fps, accent, tone: _tone }: PanelProps) {
   if (content.type !== 'list') return null;
   const ITEM_DELAY = 16;
   const titleS = spring({ frame: Math.min(frame, 30), fps, config: { damping: 20, stiffness: 110 } });
@@ -307,14 +374,320 @@ function ListPanel({ content, frame, fps, accent }: PanelProps) {
   );
 }
 
-function PanelContent({ content, frame, fps, accent }: PanelProps) {
+function PanelContent({ content, frame, fps, accent, tone }: PanelProps) {
   switch (content.type) {
-    case 'stat':    return <StatPanel    content={content} frame={frame} fps={fps} accent={accent} />;
-    case 'keyword': return <KeywordPanel content={content} frame={frame} fps={fps} accent={accent} />;
-    case 'quote':   return <QuotePanel   content={content} frame={frame} fps={fps} accent={accent} />;
-    case 'hook':    return <HookPanel    content={content} frame={frame} fps={fps} accent={accent} />;
-    case 'list':    return <ListPanel    content={content} frame={frame} fps={fps} accent={accent} />;
+    case 'stat':    return <StatPanel    content={content} frame={frame} fps={fps} accent={accent} tone={tone} />;
+    case 'keyword': return <KeywordPanel content={content} frame={frame} fps={fps} accent={accent} tone={tone} />;
+    case 'quote':   return <QuotePanel   content={content} frame={frame} fps={fps} accent={accent} tone={tone} />;
+    case 'hook':    return <HookPanel    content={content} frame={frame} fps={fps} accent={accent} tone={tone} />;
+    case 'list':    return <ListPanel    content={content} frame={frame} fps={fps} accent={accent} tone={tone} />;
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. TOP PROGRESS BAR — reemplaza el círculo, fino y limpio como Stories
+// ─────────────────────────────────────────────────────────────────────────────
+
+function TopProgressBar({ frame, durationFrames }: { frame: number; durationFrames: number; accentColor: string }) {
+  const pct = Math.min(1, frame / durationFrames);
+  const appear = spring({ frame: Math.min(frame, 8), fps: 30, config: { damping: 20, stiffness: 200 } });
+
+  // Transición suave: rojo → amarillo → verde según progreso
+  const r = Math.round(interpolate(pct, [0, 0.5, 1], [230, 250, 34],  { extrapolateRight: 'clamp' }));
+  const g = Math.round(interpolate(pct, [0, 0.5, 1], [57,  204, 197], { extrapolateRight: 'clamp' }));
+  const b = Math.round(interpolate(pct, [0, 0.5, 1], [70,  21,  94],  { extrapolateRight: 'clamp' }));
+  const color = `rgb(${r},${g},${b})`;
+
+  return (
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.07)', zIndex: 100 }}>
+      <div style={{
+        height: '100%',
+        width: `${pct * 100}%`,
+        background: `linear-gradient(90deg, #E63946 0%, #FACC15 50%, ${color} 100%)`,
+        boxShadow: `0 0 12px ${color}cc`,
+        borderRadius: '0 2px 2px 0',
+        opacity: appear,
+      }} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. ALERT BADGE — etiqueta BREAKING/CONFIRMADO que cae y parpadea
+// ─────────────────────────────────────────────────────────────────────────────
+
+function AlertBadge({ frame, fps, text, tone, startFrame, holdFrames }: {
+  frame: number; fps: number;
+  text: string; tone: Tone;
+  startFrame: number; holdFrames: number;
+}) {
+  const localF = frame - startFrame;
+  if (localF < 0) return null;
+
+  const accent = TONE_COLORS[tone] ?? TONE_COLORS.negative;
+  const rgb = hexToRgb(accent);
+
+  // Entrada con spring
+  const enter = spring({ frame: Math.min(localF, 20), fps, config: { damping: 20, stiffness: 160 } });
+  // Parpadeo × 3 en frames 0-45
+  const blinkCycle = localF < 45 ? Math.floor(localF / 8) % 2 : 1;
+  const visible = enter * blinkCycle;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 20,
+      left: 0, right: 0,
+      display: 'flex', justifyContent: 'center',
+      transform: `translateY(${interpolate(enter, [0, 1], [-40, 0])}px)`,
+      opacity: visible,
+      zIndex: 110,
+      pointerEvents: 'none',
+    }}>
+      <div style={{
+        background: accent,
+        color: '#fff',
+        fontSize: 22, fontWeight: 900,
+        fontFamily: BRAND.fonts.heading,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase' as const,
+        padding: '8px 28px',
+        borderRadius: 6,
+        boxShadow: `0 0 30px rgba(${rgb},0.7), 0 4px 16px rgba(0,0,0,0.5)`,
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <span style={{ fontSize: 14, opacity: 0.8 }}>●</span>
+        {text}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. CAPTIONS KEYWORD XL — 1-2 palabras grandes, sin fondo, impacto directo
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CaptionsKeywordXL({ words, frame, fps, accent }: {
+  words: { word: string; start: number; end: number }[];
+  frame: number; fps: number; accent: string;
+}) {
+  const currentTime = frame / fps;
+  // Busca la palabra activa
+  const active = words.find(w => currentTime >= w.start && currentTime <= w.end);
+  if (!active) return null;
+
+  // Qué palabras forman el grupo actual (agrupa por gap < 0.5s)
+  const idx = words.indexOf(active);
+  const group: typeof words = [active];
+  // máximo 2 palabras por grupo
+  const next = words[idx + 1];
+  if (next && next.start - active.end < 0.4 && group.length < 2) group.push(next);
+
+  const wordKey = group.map(w => w.word).join('-');
+  const entryF = Math.round(active.start * fps);
+  const localF = frame - entryF;
+  const s = spring({ frame: Math.min(localF, 12), fps, config: { damping: 16, stiffness: 160, mass: 0.7 } });
+
+  return (
+    <div style={{
+      position: 'absolute', left: 0, right: 0,
+      top: '50%', transform: `translateY(-50%) scale(${interpolate(s, [0, 1], [0.85, 1])})`,
+      display: 'flex', justifyContent: 'center', alignItems: 'center',
+      gap: 16, padding: '0 60px',
+      opacity: s,
+      pointerEvents: 'none',
+    }}>
+      {group.map((w, i) => {
+        const isActive = currentTime >= w.start && currentTime <= w.end;
+        return (
+          <div key={`${wordKey}-${i}`} style={{
+            fontSize: 88, fontWeight: 900,
+            fontFamily: BRAND.fonts.heading,
+            lineHeight: 1.1, letterSpacing: '-0.03em',
+            color: isActive ? accent : BRAND.colors.white,
+            textShadow: isActive
+              ? `0 0 60px rgba(${hexToRgb(accent)},0.8), 0 2px 30px rgba(0,0,0,0.95)`
+              : '0 2px 30px rgba(0,0,0,0.95)',
+            transition: 'color 0.05s',
+          }}>{w.word}</div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. BORDER FLASH — bordes de pantalla pulsan con el color del tono
+// ─────────────────────────────────────────────────────────────────────────────
+
+function BorderFlash({ frame, flashes, accentColor }: {
+  frame: number;
+  flashes: { frame: number; tone?: Tone; duration?: number }[];
+  accentColor: string;
+}) {
+  // Busca el flash más cercano activo
+  const active = flashes.find(f => frame >= f.frame && frame <= f.frame + (f.duration ?? 18));
+  if (!active) return null;
+
+  const localF = frame - active.frame;
+  const dur = active.duration ?? 18;
+  const accent = resolveAccent(active.tone, accentColor);
+  const rgb = hexToRgb(accent);
+
+  // Pulso: sube rápido, baja despacio
+  const intensity = interpolate(localF, [0, 3, dur * 0.4, dur], [0, 1, 0.7, 0], { extrapolateRight: 'clamp' });
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 200,
+      boxShadow: `inset 0 0 ${80 * intensity}px rgba(${rgb},${0.75 * intensity}), inset 0 0 ${160 * intensity}px rgba(${rgb},${0.35 * intensity})`,
+    }} />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. DATA COUNTER — "● 1 / 3" indicador de dato activo
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DataCounter({ current, total, frame, fps, accent }: {
+  current: number; total: number;
+  frame: number; fps: number; accent: string;
+}) {
+  const appear = spring({ frame: Math.min(frame, 15), fps, config: { damping: 20, stiffness: 160 } });
+  const rgb = hexToRgb(accent);
+  return (
+    <div style={{
+      position: 'absolute', bottom: 140, left: 0, right: 0,
+      display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10,
+      opacity: appear,
+      transform: `translateY(${interpolate(appear, [0, 1], [12, 0])}px)`,
+      zIndex: 90,
+    }}>
+      {/* Dots */}
+      {Array.from({ length: total }).map((_, i) => {
+        const isActive = i < current;
+        const isCurrent = i === current - 1;
+        return (
+          <div key={i} style={{
+            width: isCurrent ? 28 : 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: isActive ? accent : 'rgba(255,255,255,0.2)',
+            boxShadow: isCurrent ? `0 0 12px rgba(${rgb},0.8)` : 'none',
+            transition: 'all 0.3s ease',
+          }} />
+        );
+      })}
+      <div style={{
+        fontSize: 20, fontWeight: 800,
+        color: 'rgba(255,255,255,0.5)',
+        fontFamily: BRAND.fonts.heading,
+        letterSpacing: '0.04em',
+        marginLeft: 6,
+      }}>{current}<span style={{ color: 'rgba(255,255,255,0.25)' }}> / {total}</span></div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OVERLAY CARD — tarjeta glassmorphism flotante sobre el vídeo completo
+// ─────────────────────────────────────────────────────────────────────────────
+
+function OverlayCard({ frame, fps, startFrame, endFrame, eyebrow, value, label, source, accent }: {
+  frame: number; fps: number; startFrame: number; endFrame: number;
+  eyebrow: string; value: string; label: string; source?: string; accent: string;
+}) {
+  if (frame < startFrame || frame > endFrame) return null;
+  const localF = frame - startFrame;
+  const totalF = endFrame - startFrame;
+  const TRANS = 20;
+
+  const enter = spring({ frame: Math.min(localF, TRANS * 3), fps, config: { damping: 22, stiffness: 140, mass: 0.8 } });
+  const exitLocal = Math.max(0, localF - (totalF - TRANS));
+  const exitS = spring({ frame: exitLocal, fps, config: { damping: 22, stiffness: 140, mass: 0.8 } });
+  const amt = Math.max(0, Math.min(1, enter - exitS));
+
+  // Número animado contando
+  const { num: raw, isNum, prefix, suffix } = parseSpanishNum(value);
+  const progress = interpolate(Math.min(localF, 55), [0, 55], [0, 1], { extrapolateRight: 'clamp' });
+  const displayNum = isNum ? Math.round(raw * progress) : 0;
+  const displayValue = isNum ? `${prefix}${displayNum.toLocaleString('es-ES')}` : value;
+
+  // Separar el sufijo del resto para colorear solo el símbolo (€, %, etc.)
+  const hasSuffix = isNum && suffix.length > 0;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: 220,
+      left: 32, right: 32,
+      background: 'rgba(8,8,8,0.84)',
+      backdropFilter: 'blur(28px)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: 28,
+      padding: '28px 32px 24px',
+      display: 'flex', flexDirection: 'column', gap: 10,
+      transform: `translateY(${interpolate(amt, [0, 1], [40, 0])}px) scale(${interpolate(amt, [0, 1], [0.96, 1])})`,
+      opacity: amt,
+      boxShadow: `0 32px 72px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.06)`,
+      overflow: 'hidden',
+    }}>
+      {/* Línea de acento superior con tono */}
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 40, right: 40, height: 1,
+        background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+        opacity: 0.9,
+      }} />
+
+      {/* Eyebrow tag */}
+      <div style={{
+        fontSize: 20, fontWeight: 800,
+        color: accent,
+        fontFamily: BRAND.fonts.heading,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase' as const,
+        opacity: interpolate(localF, [5, 20], [0, 1], { extrapolateRight: 'clamp' }),
+      }}>{eyebrow}</div>
+
+      {/* Número grande */}
+      <div style={{
+        fontSize: 96, fontWeight: 900,
+        lineHeight: 1,
+        letterSpacing: '-0.04em',
+        fontFamily: BRAND.fonts.heading,
+        fontVariantNumeric: 'tabular-nums',
+        color: BRAND.colors.white,
+      }}>
+        {displayValue}
+        {hasSuffix && (
+          <span style={{ color: accent, fontSize: 64 }}>{suffix}</span>
+        )}
+      </div>
+
+      {/* Label */}
+      <div style={{
+        fontSize: 28, fontWeight: 500,
+        color: 'rgba(255,255,255,0.6)',
+        fontFamily: BRAND.fonts.heading,
+        lineHeight: 1.35,
+        opacity: interpolate(localF, [12, 30], [0, 1], { extrapolateRight: 'clamp' }),
+      }}>{label}</div>
+
+      {/* Source */}
+      {source && (
+        <div style={{
+          fontSize: 20, fontWeight: 600,
+          color: 'rgba(255,255,255,0.22)',
+          fontFamily: BRAND.fonts.heading,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase' as const,
+          marginTop: 4,
+          opacity: interpolate(localF, [20, 40], [0, 1], { extrapolateRight: 'clamp' }),
+        }}>{source}</div>
+      )}
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -351,10 +724,7 @@ function StatPopOverlay({ frame, fps, startFrame, endFrame, value, label, subtex
   const exitS = spring({ frame: exitLocal, fps, config: { damping: 18, stiffness: 130 } });
   const amt = Math.max(0, Math.min(1, enter - exitS));
 
-  const raw = parseFloat(value.replace(/[^0-9.-]/g, ''));
-  const isNum = !isNaN(raw);
-  const suffix = isNum ? value.replace(/[+\-0-9.,]/g, '') : '';
-  const prefix = value.startsWith('+') ? '+' : '';
+  const { num: raw, isNum, prefix, suffix } = parseSpanishNum(value);
   const progress = interpolate(Math.min(localF, 55), [0, 55], [0, 1], { extrapolateRight: 'clamp' });
   const displayNum = isNum ? Math.round(raw * progress) : 0;
 
@@ -371,7 +741,7 @@ function StatPopOverlay({ frame, fps, startFrame, endFrame, value, label, subtex
       minWidth: 240,
     }}>
       <div style={{ fontSize: 80, fontWeight: 900, color: accent, fontFamily: BRAND.fonts.heading, lineHeight: 1, letterSpacing: '-0.03em', textShadow: `0 0 50px rgba(${hexToRgb(accent)},0.65)` }}>
-        {prefix}{isNum ? displayNum : value}{suffix}
+        {prefix}{isNum ? displayNum.toLocaleString('es-ES') : value}{suffix}
       </div>
       <div style={{ fontSize: 24, color: 'rgba(255,255,255,0.7)', fontFamily: BRAND.fonts.heading, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>{label}</div>
       {subtext && <div style={{ fontSize: 19, color: 'rgba(255,255,255,0.38)', fontFamily: BRAND.fonts.heading, textAlign: 'center' }}>{subtext}</div>}
@@ -386,51 +756,7 @@ function StatPopOverlay({ frame, fps, startFrame, endFrame, value, label, subtex
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CIRCULAR PROGRESS — grande y llamativo con número dentro
-// ─────────────────────────────────────────────────────────────────────────────
-
-function CircularProgress({ frame, durationFrames, accent }: { frame: number; durationFrames: number; accent: string }) {
-  const R = 44;
-  const STROKE = 6;
-  const SIZE = (R + STROKE) * 2 + 4;
-  const circumference = 2 * Math.PI * R;
-  const pct = Math.min(1, frame / durationFrames);
-  const pctDisplay = Math.round(pct * 100);
-
-  const progressColor = pct < 0.33 ? BRAND.colors.red : pct < 0.66 ? BRAND.colors.yellow : BRAND.colors.green;
-  const offset = circumference * (1 - pct);
-
-  const appear = spring({ frame: Math.min(frame, 20), fps: 30, config: { damping: 20, stiffness: 150 } });
-  // Pulso suave cuando está por encima del 90%
-  const pulse = pct > 0.9 ? 1 + Math.sin(frame * 0.25) * 0.08 : 1;
-
-  return (
-    <div style={{
-      position: 'absolute', top: 36, left: 28,
-      transform: `scale(${appear * pulse})`,
-      transformOrigin: 'top left',
-    }}>
-      <svg width={SIZE} height={SIZE} style={{ filter: `drop-shadow(0 0 12px ${progressColor}88)` }}>
-        {/* Track */}
-        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="rgba(0,0,0,0.5)"
-          stroke="rgba(255,255,255,0.08)" strokeWidth={STROKE} />
-        {/* Progress arc */}
-        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none"
-          stroke={progressColor} strokeWidth={STROKE}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
-        />
-        {/* Porcentaje centrado */}
-        <text x={SIZE / 2} y={SIZE / 2 + 1} textAnchor="middle" dominantBaseline="middle"
-          fontSize={pctDisplay >= 100 ? 20 : 22} fontWeight="800"
-          fill={progressColor} fontFamily="Inter, sans-serif">
-          {pctDisplay}%
-        </text>
-      </svg>
-    </div>
-  );
-}
+// CircularProgress eliminado — reemplazado por TopProgressBar
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
@@ -443,11 +769,15 @@ export const HybridReel: React.FC<HybridReelProps> = ({
   showCaptions = true,
   captionPreset = 'hormozi',
   captionPosition = 'center',
+  captionMode = 'phrases',
   handle = 'vitaminak.of',
   ctaText = 'Sígueme para más →',
   ctaDurationFrames = 50,
   accentColor = BRAND.colors.accent,
   segments = [],
+  alertBadge,
+  borderFlashes = [],
+  dataCounter,
 }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
@@ -457,6 +787,11 @@ export const HybridReel: React.FC<HybridReelProps> = ({
   const splitSeg = activeSeg && (activeSeg.mode === 'split-bottom' || activeSeg.mode === 'split-top')
     ? activeSeg : null;
   const popSeg = activeSeg?.mode === 'stat-pop' ? activeSeg : null;
+  const cardSeg = activeSeg?.mode === 'overlay-card' ? activeSeg : null;
+
+  // ── Contador de datos activo ──────────────────────────────────────────────
+  type SegWithIndex = { dataIndex?: number };
+  const activeDataIndex = activeSeg ? (activeSeg as unknown as SegWithIndex).dataIndex ?? null : null;
 
   const splitAmt = splitSeg ? useSplitAmt(frame, fps, splitSeg.startFrame, splitSeg.endFrame) : 0;
   const isPanelBottom = splitSeg?.mode === 'split-bottom'; // vídeo arriba, panel abajo
@@ -518,26 +853,44 @@ export const HybridReel: React.FC<HybridReelProps> = ({
       </div>
 
       {/* ── BLOQUE PANEL ──────────────────────────────────────────────── */}
-      {splitSeg && panelHeightPx > 0 && (
-        <div style={{
-          position: 'absolute',
-          left: 0, right: 0,
-          top: isPanelBottom ? videoHeightPx : 0,
-          height: panelHeightPx,
-          background: '#0A0A0A',
-          overflow: 'hidden',
-        }}>
-          <PanelContent
-            content={splitSeg.panel}
-            frame={Math.max(0, frame - splitSeg.startFrame)}
-            fps={fps}
-            accent={accentColor}
-          />
-        </div>
-      )}
+      {splitSeg && panelHeightPx > 0 && (() => {
+        const segTone = (splitSeg as { tone?: Tone }).tone ?? 'neutral';
+        const segAccent = resolveAccent(segTone, accentColor);
+        return (
+          <div style={{
+            position: 'absolute',
+            left: 0, right: 0,
+            top: isPanelBottom ? videoHeightPx : 0,
+            height: panelHeightPx,
+            background: '#0A0A0A',
+            overflow: 'hidden',
+          }}>
+            {/* Tinte sutil de tono en el fondo */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: `radial-gradient(ellipse 60% 70% at 50% 60%, rgba(${hexToRgb(segAccent)},0.07) 0%, transparent 75%)`,
+            }} />
+            {/* Barra lateral de tono (izquierda) */}
+            <div style={{
+              position: 'absolute', left: 0, top: 24, bottom: 24,
+              width: 4, borderRadius: '0 3px 3px 0',
+              backgroundColor: segAccent,
+              boxShadow: `0 0 20px rgba(${hexToRgb(segAccent)},0.6)`,
+              opacity: splitAmt,
+            }} />
+            <PanelContent
+              content={splitSeg.panel}
+              frame={Math.max(0, frame - splitSeg.startFrame)}
+              fps={fps}
+              accent={segAccent}
+              tone={segTone}
+            />
+          </div>
+        );
+      })()}
 
       {/* ── DIVIDER HORIZONTAL ────────────────────────────────────────── */}
-      {splitSeg && <SplitDivider splitAmt={splitAmt} accent={accentColor} width={width} />}
+      {splitSeg && <SplitDivider splitAmt={splitAmt} accent={resolveAccent((splitSeg as { tone?: Tone }).tone, accentColor)} width={width} />}
 
       {/* ── STAT POP ──────────────────────────────────────────────────── */}
       {popSeg && (
@@ -545,26 +898,66 @@ export const HybridReel: React.FC<HybridReelProps> = ({
           frame={frame} fps={fps}
           startFrame={popSeg.startFrame} endFrame={popSeg.endFrame}
           value={popSeg.value} label={popSeg.label} subtext={popSeg.subtext}
-          accent={accentColor}
+          accent={resolveAccent((popSeg as { tone?: Tone }).tone, accentColor)}
         />
       )}
 
-      {/* ── CAPTIONS — solo cuando NO hay panel split activo ──────────── */}
+      {/* ── OVERLAY CARD ──────────────────────────────────────────────── */}
+      {cardSeg && (
+        <OverlayCard
+          frame={frame} fps={fps}
+          startFrame={cardSeg.startFrame} endFrame={cardSeg.endFrame}
+          eyebrow={cardSeg.eyebrow} value={cardSeg.value}
+          label={cardSeg.label} source={cardSeg.source}
+          accent={resolveAccent((cardSeg as { tone?: Tone }).tone, accentColor)}
+        />
+      )}
+
+      {/* ── CAPTIONS ──────────────────────────────────────────────────── */}
       {showCaptions && captions.length > 0 && !splitSeg && (
-        <CaptionsStyled
-          words={captions}
-          preset={captionPreset}
-          accent={accentColor}
-          position={captionPosition}
-          maxWordsPerPhrase={4}
-          gapThreshold={0.38}
-          uppercase={captionPreset === 'bold' || captionPreset === 'outline'}
-          shadow={true}
+        captionMode === 'keyword-xl'
+          ? <CaptionsKeywordXL words={captions} frame={frame} fps={fps} accent={accentColor} />
+          : <CaptionsStyled
+              words={captions}
+              preset={captionPreset}
+              accent={accentColor}
+              position={cardSeg ? 'top' : captionPosition}
+              maxWordsPerPhrase={4}
+              gapThreshold={0.38}
+              uppercase={captionPreset === 'bold' || captionPreset === 'outline'}
+              shadow={true}
+            />
+      )}
+
+      {/* ── TOP PROGRESS BAR (reemplaza círculo) ──────────────────────── */}
+      <TopProgressBar frame={frame} durationFrames={durationFrames} accentColor={accentColor} />
+
+      {/* ── ALERT BADGE ───────────────────────────────────────────────── */}
+      {alertBadge && (
+        <AlertBadge
+          frame={frame} fps={fps}
+          text={alertBadge.text}
+          tone={(alertBadge.tone ?? 'negative') as Tone}
+          startFrame={alertBadge.startFrame ?? 0}
+          holdFrames={alertBadge.holdFrames ?? 90}
         />
       )}
 
-      {/* ── CIRCULAR PROGRESS ─────────────────────────────────────────── */}
-      <CircularProgress frame={frame} durationFrames={durationFrames} accent={accentColor} />
+      {/* ── BORDER FLASH ──────────────────────────────────────────────── */}
+      {borderFlashes.length > 0 && (
+        <BorderFlash frame={frame} flashes={borderFlashes} accentColor={accentColor} />
+      )}
+
+      {/* ── DATA COUNTER ──────────────────────────────────────────────── */}
+      {dataCounter && activeDataIndex != null && (
+        <DataCounter
+          current={activeDataIndex}
+          total={dataCounter.total}
+          frame={Math.max(0, frame - (activeSeg?.startFrame ?? 0))}
+          fps={fps}
+          accent={resolveAccent((activeSeg as unknown as { tone?: Tone }).tone, accentColor)}
+        />
+      )}
 
       {/* ── HANDLE ────────────────────────────────────────────────────── */}
       <div style={{
@@ -585,11 +978,16 @@ export const HybridReel: React.FC<HybridReelProps> = ({
           opacity: ctaS,
         }}>
           <div style={{
-            backgroundColor: accentColor, color: '#fff',
+            backgroundColor: 'rgba(245,245,240,0.96)',
+            color: '#080808',
             fontSize: 30, fontWeight: 800, fontFamily: BRAND.fonts.heading,
             padding: '18px 48px', borderRadius: 50, letterSpacing: '-0.01em',
-            boxShadow: `0 8px 48px rgba(${hexToRgb(accentColor)},0.6), 0 2px 8px rgba(0,0,0,0.4)`,
-          }}>{ctaText}</div>
+            boxShadow: '0 8px 40px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3)',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ color: accentColor, fontSize: 18 }}>●</span>
+            {ctaText}
+          </div>
         </div>
       )}
 

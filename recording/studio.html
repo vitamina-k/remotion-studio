@@ -290,7 +290,14 @@ body{
       </div>
       <div class="src-body">
         <label style="font-size:.65rem;color:var(--text3);font-weight:600">Dispositivo</label>
-        <select class="src-select" id="camSelect" onchange="switchCamera()"></select>
+        <select class="src-select" id="camSelect" onchange="switchCamera()" onclick="event.stopPropagation()"></select>
+        <label style="font-size:.65rem;color:var(--text3);font-weight:600;margin-top:6px;display:block">Calidad</label>
+        <select class="src-select" id="qualitySelect" onchange="switchCamera()" onclick="event.stopPropagation()" style="margin-top:2px">
+          <option value="4k">4K · 3840×2160</option>
+          <option value="1080p" selected>1080p · 1920×1080</option>
+          <option value="720p">720p · 1280×720</option>
+          <option value="480p">480p · 854×480</option>
+        </select>
       </div>
     </div>
 
@@ -323,7 +330,7 @@ body{
       </div>
       <div class="src-body">
         <label style="font-size:.65rem;color:var(--text3);font-weight:600">Dispositivo</label>
-        <select class="src-select" id="micSelect" onchange="switchMic()"></select>
+        <select class="src-select" id="micSelect" onchange="switchMic()" onclick="event.stopPropagation()"></select>
       </div>
     </div>
 
@@ -675,10 +682,20 @@ async function enumerateDevices() {
 
 async function startPC() {
   const deviceId = document.getElementById('camSelect').value;
+  const quality = document.getElementById('qualitySelect')?.value || '1080p';
+  const QUALITY_MAP = {
+    '4k':   { width: 3840, height: 2160 },
+    '1080p':{ width: 1920, height: 1080 },
+    '720p': { width: 1280, height: 720  },
+    '480p': { width: 854,  height: 480  },
+  };
+  const { width, height } = QUALITY_MAP[quality] || QUALITY_MAP['1080p'];
   try {
     if (state.pcStream) state.pcStream.getTracks().forEach(t => t.stop());
     state.pcStream = await navigator.mediaDevices.getUserMedia({
-      video: deviceId ? { deviceId: { exact: deviceId } } : { width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: deviceId
+        ? { deviceId: { exact: deviceId }, width: { ideal: width }, height: { ideal: height }, frameRate: { ideal: 30 } }
+        : { width: { ideal: width }, height: { ideal: height }, frameRate: { ideal: 30 } },
       audio: false,
     });
     document.getElementById('pcSubtitle').textContent = 'Activa ✓';
@@ -860,13 +877,16 @@ function updatePreview() {
 function buildCompositeStream() {
   // Canvas para mezclar PC + Phone si modo mix
   if (state.mode === 'mix' && state.pcStream && state.phoneStream) {
+    const quality = document.getElementById('qualitySelect')?.value || '1080p';
+    const QUALITY_MAP = { '4k':{w:3840,h:2160},'1080p':{w:1920,h:1080},'720p':{w:1280,h:720},'480p':{w:854,h:480} };
+    const {w: cW, h: cH} = QUALITY_MAP[quality] || QUALITY_MAP['1080p'];
     const canvas = document.createElement('canvas');
-    canvas.width  = 1280; canvas.height = 720;
+    canvas.width  = cW; canvas.height = cH;
     const ctx = canvas.getContext('2d');
     const vPC    = document.createElement('video'); vPC.srcObject    = state.pcStream;    vPC.play();
     const vPhone = document.createElement('video'); vPhone.srcObject = state.phoneStream; vPhone.play();
     const draw = () => {
-      ctx.drawImage(vPC,    0,   0, 1280, 720);
+      ctx.drawImage(vPC,    0,   0, cW, cH);
       ctx.drawImage(vPhone, 960, 540, 320, 180);
       requestAnimationFrame(draw);
     };
@@ -1123,13 +1143,21 @@ const SCENE_ICONS = {
 };
 
 async function loadScenes() {
+  const el = document.getElementById('previewTpText');
   try {
-    const res  = await fetch('/api/current-scenes');
+    const res  = await fetch('http://localhost:3001/api/current-scenes');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     tp.scenes  = data.scenes || [];
+    if (!tp.scenes.length) {
+      if (el) el.textContent = 'Sin escenas. Genera un guión primero.';
+    }
     renderSceneList();
     renderPreviewTp();
-  } catch { /* server not running — ignore */ }
+  } catch (e) {
+    console.error('loadScenes error:', e);
+    if (el) el.textContent = 'Error cargando guión. Revisa que el server corre en :3001';
+  }
 }
 
 let tpVisible = false;
@@ -1143,7 +1171,7 @@ function togglePreviewTp() {
 
 function renderPreviewTp() {
   const sc = tp.scenes[tp.current];
-  if (!sc || !tpVisible) return;
+  if (!sc) return;
   const icon = SCENE_ICONS[sc.type] || '▶';
   const text = sc.text || sc.content?.text || sc.content?.label || sc.content?.value || sc.type;
   document.getElementById('previewTpType').textContent = `${icon} ESCENA ${tp.current + 1}/${tp.scenes.length}`;
@@ -1249,8 +1277,8 @@ async function init() {
   // 2. Enumerar dispositivos (ahora tendrán labels correctos)
   await enumerateDevices();
 
-  // 3. Arrancar cámara y micro del PC
-  await Promise.all([ startPC(), startPCMic() ]);
+  // 3. Arrancar cámara y micro del PC (allSettled = el guión carga aunque falle la cámara)
+  await Promise.allSettled([ startPC(), startPCMic() ]);
 
   // updatePreview ya se llama dentro de startPC
   await loadQR();
